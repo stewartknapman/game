@@ -1,5 +1,5 @@
 var instance;
-var MediaQuery = function () {
+var WindowSizeManager = function () {
   if (instance) {
     return instance;
   }
@@ -7,4 +7,4 @@ var MediaQuery = function () {
   instance = this;
 };
 
-module.exports = MediaQuery;
+module.exports = WindowSizeManager;
