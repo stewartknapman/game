@@ -1,5 +1,5 @@
 var CanvasManager = require('../../src/canvas_manager.js');
-var canvas = new CanvasManager('#main', scale);
+var canvas = new CanvasManager('#main', scaleType);
 
 var draw_background = function (scale_size) {
   var limit = 1500;
@@ -13,10 +13,10 @@ var draw_background = function (scale_size) {
     }
     
     var size = limit - (step * i);
-    var centerX = (canvas.width - size) / 2;
-    var centerY = (canvas.height - size) / 2;
+    var x = Math.round((canvas.width - size) / 2);
+    var y = Math.round((canvas.height - size) / 2);
     
-    canvas.context.fillRect(centerX, centerY, size, size);
+    canvas.context.fillRect(x, y, size, size);
   }
 };
 
@@ -31,15 +31,38 @@ var draw_box = function (scale_size) {
 };
 
 var draw = function () {
-  // TODO: scale size based on mq breakpoints
-  var scale_size = (scale)? 1 : scale_size || 1;
+  var scale_size;
+  if (scaleType === 'scale') {
+    scale_size = 1;
+  } else if (scaleType === 'full') {
+    switch (canvas.windowMQSize) {
+      case 'xs':
+        scale_size = 0.5;
+        break;
+      case 'sm':
+        scale_size = 1;
+        break;
+      case 'md':
+        scale_size = 1.5;
+        break;
+      case 'lg':
+        scale_size = 2;
+        break;
+      case 'xl':
+        scale_size = 2.5;
+        break;
+      default:
+        scale_size = 1;
+    }
+  }
+  
   draw_background(scale_size);
   draw_box(scale_size);
 };
 
-canvas.on_resize = function () {
+canvas.on('resize', function () {
   draw();
-};
+});
 
 window.onload = function () {
   draw();
