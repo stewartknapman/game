@@ -1,5 +1,6 @@
 var Game = require('../../../src/game.js');
 var game = new Game('#main');
+window.game = game;
 
 var tick = 0;
 

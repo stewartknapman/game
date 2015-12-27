@@ -8,6 +8,8 @@ var Game = function (canvasSelector, scaleType) {
   this.canvas = new CanvasManager(canvasSelector, scaleType);
   this.stateManager = new StateManager();
   this.loop = new Loop(this.stateManager);
+  
+  this._addEventListeners();
 };
 
 // Set up states
@@ -31,9 +33,9 @@ Game.prototype.stop = function () {
 
 // Private
 
-Game.prototype._adEventListeners = function () {
+Game.prototype._addEventListeners = function () {
   var game = this;
-  this.canvas.on('reload', function () {
+  this.canvas.on('resize', function () {
     game.stateManager.resizeCurrentState();
   });
 };

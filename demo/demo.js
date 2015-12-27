@@ -1,6 +1,7 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 var Game = require('../../../src/game.js');
 var game = new Game('#main');
+window.game = game;
 
 var tick = 0;
 
@@ -118,6 +119,8 @@ var Game = function (canvasSelector, scaleType) {
   this.canvas = new CanvasManager(canvasSelector, scaleType);
   this.stateManager = new StateManager();
   this.loop = new Loop(this.stateManager);
+  
+  this._addEventListeners();
 };
 
 // Set up states
@@ -141,9 +144,9 @@ Game.prototype.stop = function () {
 
 // Private
 
-Game.prototype._adEventListeners = function () {
+Game.prototype._addEventListeners = function () {
   var game = this;
-  this.canvas.on('reload', function () {
+  this.canvas.on('resize', function () {
     game.stateManager.resizeCurrentState();
   });
 };
