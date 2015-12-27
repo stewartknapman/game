@@ -4,6 +4,8 @@
   "description": "\"The gam-e is mine?!\"",
   "main": "src/game.js",
   "scripts": {
+    "demo": "browserify ./demo/src/js/demo.js > ./demo/demo.js",
+    "demo:watch": "watch 'npm run demo' ./demo/src/js ./src",
     "test:responsive": "browserify ./test/responsive/_responsive.js > ./test/responsive/responsive.js",
     "test:responsive:watch": "watch 'npm run test:responsive' ./test/responsive ./src"
   },
