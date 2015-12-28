@@ -5,6 +5,7 @@ window.game = game;
 
 game.newState('demo', {
   init: function () {
+    this.travelMethod = 'longestLine';
     this.playerV = 5;
     this.playerX = Math.round(game.canvas.width / 2);
     this.playerY = Math.round(game.canvas.height / 2);
@@ -27,21 +28,51 @@ game.newState('demo', {
       var diffY_pos = (diffY < 0)? diffY * -1 : diffY;
       var velocity = this.playerV;
       
-      if (diffX_pos > diffY_pos) {
-        if (diffX_pos < velocity) velocity = diffX_pos;
-        if (diffX > 0) {
-          this.playerX -= velocity;
-        } else {
-          this.playerX += velocity;
-        }
-      } else {
-        if (diffY_pos < velocity) velocity = diffY_pos;
-        if (diffY > 0) {
-          this.playerY -= velocity;
-        } else {
-          this.playerY += velocity;
-        }
+      switch (this.travelMethod) {
+        case 'longestLine':
+          this.longestLine(diffX, diffY, diffX_pos, diffY_pos, velocity);
+          break;
+        default:
+          this.shortestLine(diffX, diffY, diffX_pos, diffY_pos, velocity);
       }
+    }
+  },
+  
+  longestLine: function (diffX, diffY, diffX_pos, diffY_pos, velocity) {
+    if (this.playerX === this.targetX || this.playerY === this.targetY) {
+      this.shortestLine(diffX, diffY, diffX_pos, diffY_pos, velocity);
+    } else {
+      if (diffX_pos < diffY_pos) {
+        this.moveX(diffX, diffX_pos, velocity);
+      } else {
+        this.moveY(diffY, diffY_pos, velocity);
+      }
+    }
+  },
+  
+  shortestLine: function (diffX, diffY, diffX_pos, diffY_pos, velocity) {
+    if (diffX_pos > diffY_pos) {
+      this.moveX(diffX, diffX_pos, velocity);
+    } else {
+      this.moveY(diffY, diffY_pos, velocity);
+    }
+  },
+  
+  moveX: function (diffX, diffX_pos, velocity) {
+    if (diffX_pos < velocity) velocity = diffX_pos;
+    if (diffX > 0) {
+      this.playerX -= velocity;
+    } else {
+      this.playerX += velocity;
+    }
+  },
+  
+  moveY: function (diffY, diffY_pos, velocity) {
+    if (diffY_pos < velocity) velocity = diffY_pos;
+    if (diffY > 0) {
+      this.playerY -= velocity;
+    } else {
+      this.playerY += velocity;
     }
   },
   
@@ -59,10 +90,7 @@ game.newState('demo', {
     this.targetY = Math.round(this.targetY * heightRatio);
   },
   
-  render: function () {
-    // Render is called after Init, Update & Resize
-    
-    // Draw player
+  render: function () { // Render is called after Init, Update & Resize
     this.drawPlayer();
   },
   
