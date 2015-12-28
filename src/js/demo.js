@@ -1,3 +1,9 @@
+/*
+  TODO:
+    - collision detection
+    - make bb-8's orange circles better
+*/
+
 var Game = require('../../../src/game.js');
 var game = new Game('#main');
 window.game = game;
@@ -32,7 +38,6 @@ game.newState('demo', {
   move: function (diffX, diffY, diffX_pos, diffY_pos, velocity) {
     // move along the shortest axis until it's the same as the target
     // then move along the remaining axis
-    // TODO: collision detection
     
     if (this.playerX === this.targetX || this.playerY === this.targetY) {
       if (diffX_pos > diffY_pos) {
