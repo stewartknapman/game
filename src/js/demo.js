@@ -4,7 +4,6 @@ window.game = game;
 
 game.newState('demo', {
   init: function () {
-    this.travelMethod = 'longestLine';
     this.playerV = 5;
     this.playerX = Math.round(game.canvas.width / 2);
     this.playerY = Math.round(game.canvas.height / 2);
@@ -20,40 +19,33 @@ game.newState('demo', {
   
   update: function () {
     if (this.targetX !== this.playerX || this.targetY !== this.playerY) {
-
       var diffX = this.playerX - this.targetX;
       var diffY = this.playerY - this.targetY;      
       var diffX_pos = (diffX < 0)? diffX * -1 : diffX;
       var diffY_pos = (diffY < 0)? diffY * -1 : diffY;
       var velocity = this.playerV;
       
-      switch (this.travelMethod) {
-        case 'longestLine':
-          this.longestLine(diffX, diffY, diffX_pos, diffY_pos, velocity);
-          break;
-        default:
-          this.shortestLine(diffX, diffY, diffX_pos, diffY_pos, velocity);
-      }
+      this.move(diffX, diffY, diffX_pos, diffY_pos, velocity);
     }
   },
   
-  longestLine: function (diffX, diffY, diffX_pos, diffY_pos, velocity) {
+  move: function (diffX, diffY, diffX_pos, diffY_pos, velocity) {
+    // move along the shortest axis until it's the same as the target
+    // then move along the remaining axis
+    // TODO: collision detection
+    
     if (this.playerX === this.targetX || this.playerY === this.targetY) {
-      this.shortestLine(diffX, diffY, diffX_pos, diffY_pos, velocity);
+      if (diffX_pos > diffY_pos) {
+        this.moveX(diffX, diffX_pos, velocity);
+      } else {
+        this.moveY(diffY, diffY_pos, velocity);
+      }
     } else {
       if (diffX_pos < diffY_pos) {
         this.moveX(diffX, diffX_pos, velocity);
       } else {
         this.moveY(diffY, diffY_pos, velocity);
       }
-    }
-  },
-  
-  shortestLine: function (diffX, diffY, diffX_pos, diffY_pos, velocity) {
-    if (diffX_pos > diffY_pos) {
-      this.moveX(diffX, diffX_pos, velocity);
-    } else {
-      this.moveY(diffY, diffY_pos, velocity);
     }
   },
   
@@ -94,13 +86,63 @@ game.newState('demo', {
   },
   
   drawPlayer: function () {
+    // body
     game.canvas.context.fillStyle = '#eee';
-    game.canvas.context.strokeStyle = '#ccc solid 1px';
-    game.canvas.context.arc(this.playerX, this.playerY, 10, 0, 360);
+    game.canvas.context.strokeStyle = '#333';
+    game.canvas.context.beginPath();
+    game.canvas.context.arc(this.playerX, this.playerY, 20, 0, 360);
     game.canvas.context.fill();
     game.canvas.context.stroke();
+    
+    // orange dot
+    game.canvas.context.fillStyle = '#ca601e';
+    game.canvas.context.strokeStyle = '#ca601e';
+    game.canvas.context.beginPath();
+    game.canvas.context.arc(this.playerX, this.playerY, 12, 0, 360);
+    game.canvas.context.fill();
+    game.canvas.context.stroke();
+    
+    // silver dot
+    game.canvas.context.fillStyle = '#ddd';
+    game.canvas.context.beginPath();
+    game.canvas.context.arc(this.playerX, this.playerY, 8, 0, 360);
+    game.canvas.context.fill();
+    
+    // head
+    game.canvas.context.fillStyle = '#eee';
+    game.canvas.context.strokeStyle = '#333';
+    game.canvas.context.beginPath();
+    game.canvas.context.arc(this.playerX, this.playerY - 22, 10, (Math.PI/180)*150, (Math.PI/180)*30);
+    game.canvas.context.arc(this.playerX, this.playerY - 42, 26, (Math.PI/180)*71, (Math.PI/180)*109);
+    game.canvas.context.fill();
+    game.canvas.context.stroke();
+    
+    // eyes
+    game.canvas.context.fillStyle = '#333';
+    game.canvas.context.strokeStyle = '#333';
+    game.canvas.context.beginPath();
+    game.canvas.context.arc(this.playerX, this.playerY - 25, 3, 0, 360);
+    game.canvas.context.fill();
+    game.canvas.context.stroke();
+    
+    game.canvas.context.fillStyle = '#333';
+    game.canvas.context.strokeStyle = '#333';
+    game.canvas.context.beginPath();
+    game.canvas.context.arc(this.playerX + 5, this.playerY - 21, 1, 0, 360);
+    game.canvas.context.fill();
+    game.canvas.context.stroke();
+    
+    // antenia
+    game.canvas.context.fillStyle = '#333';
+    game.canvas.context.strokeStyle = '#333';
+    game.canvas.context.beginPath();
+    game.canvas.context.moveTo(this.playerX, this.playerY - 30);
+    game.canvas.context.lineTo(this.playerX, this.playerY - 40);
+    game.canvas.context.stroke();
+    game.canvas.context.closePath();
+    
   }
 });
 
 game.loadState('demo');
-// game.start();
+game.start();
