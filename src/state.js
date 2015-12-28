@@ -1,7 +1,3 @@
-/*
-  Pre and post methods could be interesting (?)
-*/
-
 var State = function (id, object) {
   this.id = id;
   this._setMethods(object);

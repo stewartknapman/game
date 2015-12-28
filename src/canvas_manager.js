@@ -1,3 +1,8 @@
+/*
+  TODO:
+    retinaify canvas
+*/
+
 var Eventer = require('./eventer.js');
 var WindowSizeManager = require('./window_size_manager.js');
 

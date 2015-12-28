@@ -1,4 +1,10 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+/*
+  TODO:
+    - collision detection
+    - make bb-8's orange circles better
+*/
+
 var Game = require('../../../src/game.js');
 var game = new Game('#main');
 window.game = game;
@@ -33,7 +39,6 @@ game.newState('demo', {
   move: function (diffX, diffY, diffX_pos, diffY_pos, velocity) {
     // move along the shortest axis until it's the same as the target
     // then move along the remaining axis
-    // TODO: collision detection
     
     if (this.playerX === this.targetX || this.playerY === this.targetY) {
       if (diffX_pos > diffY_pos) {
@@ -148,6 +153,11 @@ game.newState('demo', {
 game.loadState('demo');
 game.start();
 },{"../../../src/game.js":4}],2:[function(require,module,exports){
+/*
+  TODO:
+    retinaify canvas
+*/
+
 var Eventer = require('./eventer.js');
 var WindowSizeManager = require('./window_size_manager.js');
 
@@ -332,10 +342,6 @@ Loop.prototype.stopLoop = function () {
 
 module.exports = Loop;
 },{}],6:[function(require,module,exports){
-/*
-  Pre and post methods could be interesting (?)
-*/
-
 var State = function (id, object) {
   this.id = id;
   this._setMethods(object);
