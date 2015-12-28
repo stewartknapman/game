@@ -3,13 +3,76 @@ var Game = require('../../../src/game.js');
 var game = new Game('#main');
 window.game = game;
 
-var tick = 0;
-
 game.newState('demo', {
-  init: function () { console.log('init'); },
-  update: function () { console.log('update', tick); tick++; },
-  destroy: function () { console.log('destroy'); },
-  resize: function () { console.log('resize'); }
+  init: function () {
+    this.playerV = 5;
+    this.playerX = Math.round(game.canvas.width / 2);
+    this.playerY = Math.round(game.canvas.height / 2);
+    this.targetX = this.playerX;
+    this.targetY = this.playerY;
+    
+    var _this = this;
+    document.addEventListener('click', function (event) {
+      _this.targetX = Math.round(event.x);
+      _this.targetY = Math.round(event.y);
+    });
+  },
+  
+  update: function () {
+    if (this.targetX !== this.playerX || this.targetY !== this.playerY) {
+
+      var diffX = this.playerX - this.targetX;
+      var diffY = this.playerY - this.targetY;      
+      var diffX_pos = (diffX < 0)? diffX * -1 : diffX;
+      var diffY_pos = (diffY < 0)? diffY * -1 : diffY;
+      var velocity = this.playerV;
+      
+      if (diffX_pos > diffY_pos) {
+        if (diffX_pos < velocity) velocity = diffX_pos;
+        if (diffX > 0) {
+          this.playerX -= velocity;
+        } else {
+          this.playerX += velocity;
+        }
+      } else {
+        if (diffY_pos < velocity) velocity = diffY_pos;
+        if (diffY > 0) {
+          this.playerY -= velocity;
+        } else {
+          this.playerY += velocity;
+        }
+      }
+    }
+  },
+  
+  destroy: function () {
+    
+  },
+  
+  resize: function () {
+    var widthRatio = game.canvas.width / game.canvas.previousWidth;
+    var heightRatio = game.canvas.height / game.canvas.previousHeight;
+    
+    this.playerX = Math.round(this.playerX * widthRatio);
+    this.playerY = Math.round(this.playerY * heightRatio);
+    this.targetX = Math.round(this.targetX * widthRatio);
+    this.targetY = Math.round(this.targetY * heightRatio);
+  },
+  
+  render: function () {
+    // Render is called after Init, Update & Resize
+    
+    // Draw player
+    this.drawPlayer();
+  },
+  
+  drawPlayer: function () {
+    game.canvas.context.fillStyle = '#eee';
+    game.canvas.context.strokeStyle = '#ccc solid 1px';
+    game.canvas.context.arc(this.playerX, this.playerY, 10, 0, 360);
+    game.canvas.context.fill();
+    game.canvas.context.stroke();
+  }
 });
 
 game.loadState('demo');
@@ -32,6 +95,13 @@ var CanvasManager = function (canvasSelector, scaleType) {
   }
 };
 
+CanvasManager.prototype.clear = function () {
+  // clears the canavs so that it is ready to be redrawn
+  // TODO: have dirty areas marked for clearing to be more effciant,
+  //  rather than clearing the whole thing?
+  this.canvas.width = this.canvas.width;
+};
+
 // Private
 
 CanvasManager.prototype._addEventListeners = function () {
@@ -51,19 +121,23 @@ CanvasManager.prototype._setSizeData = function () {
   this.windowOrientation = (window.innerWidth > window.innerHeight)? 'landscape' : 'portrait';
   
   // Set the current media query size of the window
-  if (this.window.mqSize !== this.windowMQSize) this.windowMQSize = this.window.mqSize;
+  this.windowMQSize = this.window.mqSize;
 };
 
 CanvasManager.prototype._setCanvasSize = function () {
   if (this.scaleType === 'scale') {
     // Scale the canvas down so that it fits the window but keeps it's proportions
     // Scaleing is done with css max-width & max-height
-    if (this.canvas.width !== this.width) this.width = this.canvas.width = this.canvas.width;
-    if (this.canvas.height !== this.height) this.height = this.canvas.height = this.canvas.height;
+    this.previousWidth = this.width || this.canvas.width;
+    this.previousHeight = this.height || this.canvas.height;
+    this.width = this.canvas.width = this.canvas.width;
+    this.height = this.canvas.height = this.canvas.height;
   } else if (this.scaleType === 'full') {
     // Resize the canvas to fill the window
-    if (window.innerWidth !== this.width) this.width = this.canvas.width = window.innerWidth;
-    if (window.innerHeight !== this.height) this.height = this.canvas.height = window.innerHeight;
+    this.previousWidth = this.width || window.innerWidth;
+    this.previousHeight = this.height || window.innerHeight;
+    this.width = this.canvas.width = window.innerWidth;
+    this.height = this.canvas.height = window.innerHeight;
   }
 };
 
@@ -109,6 +183,11 @@ Eventer.prototype.trigger = function (event, args) {
 
 module.exports = Eventer;
 },{}],4:[function(require,module,exports){
+/*
+  TODO:
+    pause/stop on window blur
+*/
+
 var CanvasManager = require('./canvas_manager.js');
 var StateManager = require('./state_manager.js');
 var Loop = require('./loop.js');
@@ -117,7 +196,7 @@ var Game = function (canvasSelector, scaleType) {
   var scaleType = scaleType || 'full';
   
   this.canvas = new CanvasManager(canvasSelector, scaleType);
-  this.stateManager = new StateManager();
+  this.stateManager = new StateManager(this.canvas);
   this.loop = new Loop(this.stateManager);
   
   this._addEventListeners();
@@ -183,6 +262,10 @@ Loop.prototype.stopLoop = function () {
 
 module.exports = Loop;
 },{}],6:[function(require,module,exports){
+/*
+  Pre and post methods could be interesting (?)
+*/
+
 var State = function (id, object) {
   this.id = id;
   this._setMethods(object);
@@ -191,6 +274,7 @@ var State = function (id, object) {
 State.prototype.init = function () { console.log('default init') };
 State.prototype.update = function () { console.log('default update') };
 State.prototype.destroy = function () { console.log('default destroy') };
+State.prototype.render = function () { console.log('default render') };
 State.prototype.resize = function () { console.log('default resize') };
 
 // private
@@ -207,9 +291,10 @@ module.exports = State;
 },{}],7:[function(require,module,exports){
 var State = require('./state.js');
 
-var States = function () {
-  this.currentState = null;
+var States = function (canvas) {
+  this.canvas = canvas;
   this.states = {};
+  this.currentState = null;
 };
 
 States.prototype.addState = function (stateId, stateObj) {
@@ -219,17 +304,24 @@ States.prototype.addState = function (stateId, stateObj) {
 States.prototype.loadState = function (stateId) {
   if (this.currentState) {
     this.currentState.destroy();
+    this.canvas.clear();
   }
+  
   this.currentState = this.states[stateId];
   this.currentState.init();
+  this.currentState.render();
 };
 
 States.prototype.updateCurrentState = function () {
   this.currentState.update();
+  this.canvas.clear();
+  this.currentState.render();
 };
 
 States.prototype.resizeCurrentState = function () {
   this.currentState.resize();
+  this.canvas.clear();
+  this.currentState.render();
 };
 
 module.exports = States;

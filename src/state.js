@@ -1,3 +1,7 @@
+/*
+  Pre and post methods could be interesting (?)
+*/
+
 var State = function (id, object) {
   this.id = id;
   this._setMethods(object);
@@ -6,6 +10,7 @@ var State = function (id, object) {
 State.prototype.init = function () { console.log('default init') };
 State.prototype.update = function () { console.log('default update') };
 State.prototype.destroy = function () { console.log('default destroy') };
+State.prototype.render = function () { console.log('default render') };
 State.prototype.resize = function () { console.log('default resize') };
 
 // private

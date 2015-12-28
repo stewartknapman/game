@@ -1,3 +1,8 @@
+/*
+  TODO:
+    pause/stop on window blur
+*/
+
 var CanvasManager = require('./canvas_manager.js');
 var StateManager = require('./state_manager.js');
 var Loop = require('./loop.js');
@@ -6,7 +11,7 @@ var Game = function (canvasSelector, scaleType) {
   var scaleType = scaleType || 'full';
   
   this.canvas = new CanvasManager(canvasSelector, scaleType);
-  this.stateManager = new StateManager();
+  this.stateManager = new StateManager(this.canvas);
   this.loop = new Loop(this.stateManager);
   
   this._addEventListeners();

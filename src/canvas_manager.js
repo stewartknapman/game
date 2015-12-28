@@ -15,6 +15,13 @@ var CanvasManager = function (canvasSelector, scaleType) {
   }
 };
 
+CanvasManager.prototype.clear = function () {
+  // clears the canavs so that it is ready to be redrawn
+  // TODO: have dirty areas marked for clearing to be more effciant,
+  //  rather than clearing the whole thing?
+  this.canvas.width = this.canvas.width;
+};
+
 // Private
 
 CanvasManager.prototype._addEventListeners = function () {
@@ -34,19 +41,23 @@ CanvasManager.prototype._setSizeData = function () {
   this.windowOrientation = (window.innerWidth > window.innerHeight)? 'landscape' : 'portrait';
   
   // Set the current media query size of the window
-  if (this.window.mqSize !== this.windowMQSize) this.windowMQSize = this.window.mqSize;
+  this.windowMQSize = this.window.mqSize;
 };
 
 CanvasManager.prototype._setCanvasSize = function () {
   if (this.scaleType === 'scale') {
     // Scale the canvas down so that it fits the window but keeps it's proportions
     // Scaleing is done with css max-width & max-height
-    if (this.canvas.width !== this.width) this.width = this.canvas.width = this.canvas.width;
-    if (this.canvas.height !== this.height) this.height = this.canvas.height = this.canvas.height;
+    this.previousWidth = this.width || this.canvas.width;
+    this.previousHeight = this.height || this.canvas.height;
+    this.width = this.canvas.width = this.canvas.width;
+    this.height = this.canvas.height = this.canvas.height;
   } else if (this.scaleType === 'full') {
     // Resize the canvas to fill the window
-    if (window.innerWidth !== this.width) this.width = this.canvas.width = window.innerWidth;
-    if (window.innerHeight !== this.height) this.height = this.canvas.height = window.innerHeight;
+    this.previousWidth = this.width || window.innerWidth;
+    this.previousHeight = this.height || window.innerHeight;
+    this.width = this.canvas.width = window.innerWidth;
+    this.height = this.canvas.height = window.innerHeight;
   }
 };
 
