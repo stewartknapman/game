@@ -6,13 +6,14 @@
 
 var Game = require('../../../src/game.js');
 var game = new Game('#main');
+var canvas = game.canvas;
 window.game = game;
 
 game.newState('demo', {
   init: function () {
     this.playerV = 5;
-    this.playerX = Math.round(game.canvas.width / 2);
-    this.playerY = Math.round(game.canvas.height / 2);
+    this.playerX = Math.round(canvas.width / 2);
+    this.playerY = Math.round(canvas.height / 2);
     this.targetX = this.playerX;
     this.targetY = this.playerY;
     
@@ -77,8 +78,8 @@ game.newState('demo', {
   },
   
   resize: function () {
-    var widthRatio = game.canvas.width / game.canvas.previousWidth;
-    var heightRatio = game.canvas.height / game.canvas.previousHeight;
+    var widthRatio = canvas.width / canvas.previousWidth;
+    var heightRatio = canvas.height / canvas.previousHeight;
     
     this.playerX = Math.round(this.playerX * widthRatio);
     this.playerY = Math.round(this.playerY * heightRatio);
@@ -92,60 +93,59 @@ game.newState('demo', {
   
   drawPlayer: function () {
     // body
-    game.canvas.context.fillStyle = '#eee';
-    game.canvas.context.strokeStyle = '#333';
-    game.canvas.context.beginPath();
-    game.canvas.context.arc(this.playerX, this.playerY, 20, 0, 360);
-    game.canvas.context.fill();
-    game.canvas.context.stroke();
+    canvas.context.fillStyle = '#eee';
+    canvas.context.strokeStyle = '#333';
+    canvas.context.beginPath();
+    canvas.context.arc(this.playerX, this.playerY, 20, 0, 180);
+    canvas.context.fill();
+    canvas.context.stroke();
     
     // orange dot
-    game.canvas.context.fillStyle = '#ca601e';
-    game.canvas.context.strokeStyle = '#ca601e';
-    game.canvas.context.beginPath();
-    game.canvas.context.arc(this.playerX, this.playerY, 12, 0, 360);
-    game.canvas.context.fill();
-    game.canvas.context.stroke();
+    canvas.context.fillStyle = '#ca601e';
+    canvas.context.strokeStyle = '#ca601e';
+    canvas.context.beginPath();
+    canvas.context.arc(this.playerX, this.playerY, 12, 0, 180);
+    canvas.context.fill();
+    canvas.context.stroke();
     
     // silver dot
-    game.canvas.context.fillStyle = '#ddd';
-    game.canvas.context.beginPath();
-    game.canvas.context.arc(this.playerX, this.playerY, 8, 0, 360);
-    game.canvas.context.fill();
+    canvas.context.fillStyle = '#ddd';
+    canvas.context.beginPath();
+    canvas.context.arc(this.playerX, this.playerY, 8, 0, 180);
+    canvas.context.fill();
     
     // head
-    game.canvas.context.fillStyle = '#eee';
-    game.canvas.context.strokeStyle = '#333';
-    game.canvas.context.beginPath();
-    game.canvas.context.arc(this.playerX, this.playerY - 22, 10, (Math.PI/180)*150, (Math.PI/180)*30);
-    game.canvas.context.arc(this.playerX, this.playerY - 42, 26, (Math.PI/180)*71, (Math.PI/180)*109);
-    game.canvas.context.fill();
-    game.canvas.context.stroke();
+    canvas.context.fillStyle = '#eee';
+    canvas.context.strokeStyle = '#333';
+    canvas.context.beginPath();
+    canvas.context.arc(this.playerX, this.playerY - 22, 10, (Math.PI/180)*150, (Math.PI/180)*30);
+    canvas.context.arc(this.playerX, this.playerY - 42, 26, (Math.PI/180)*71, (Math.PI/180)*109);
+    canvas.context.fill();
+    canvas.context.stroke();
     
     // eyes
-    game.canvas.context.fillStyle = '#333';
-    game.canvas.context.strokeStyle = '#333';
-    game.canvas.context.beginPath();
-    game.canvas.context.arc(this.playerX, this.playerY - 25, 3, 0, 360);
-    game.canvas.context.fill();
-    game.canvas.context.stroke();
+    canvas.context.fillStyle = '#333';
+    canvas.context.strokeStyle = '#333';
+    canvas.context.beginPath();
+    canvas.context.arc(this.playerX, this.playerY - 25, 3, 0, 180);
+    canvas.context.fill();
+    canvas.context.stroke();
     
-    game.canvas.context.fillStyle = '#333';
-    game.canvas.context.strokeStyle = '#333';
-    game.canvas.context.beginPath();
-    game.canvas.context.arc(this.playerX + 5, this.playerY - 21, 1, 0, 360);
-    game.canvas.context.fill();
-    game.canvas.context.stroke();
+    canvas.context.fillStyle = '#333';
+    canvas.context.strokeStyle = '#333';
+    canvas.context.beginPath();
+    canvas.context.arc(this.playerX + 5, this.playerY - 21, 1, 0, 180);
+    canvas.context.fill();
+    canvas.context.stroke();
     
     // antenia
-    game.canvas.context.fillStyle = '#333';
-    game.canvas.context.strokeStyle = '#333';
-    game.canvas.context.beginPath();
-    game.canvas.context.moveTo(this.playerX, this.playerY - 30);
-    game.canvas.context.lineTo(this.playerX, this.playerY - 40);
-    game.canvas.context.stroke();
-    game.canvas.context.closePath();
-    
+    canvas.context.fillStyle = '#333';
+    canvas.context.strokeStyle = '#333';
+    canvas.context.beginPath();
+    canvas.context.moveTo(this.playerX, this.playerY - 30);
+    canvas.context.lineTo(this.playerX, this.playerY - 40);
+    canvas.context.stroke();
+    canvas.context.closePath();
   }
 });
 

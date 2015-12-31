@@ -7,13 +7,14 @@
 
 var Game = require('../../../src/game.js');
 var game = new Game('#main');
+var canvas = game.canvas;
 window.game = game;
 
 game.newState('demo', {
   init: function () {
     this.playerV = 5;
-    this.playerX = Math.round(game.canvas.width / 2);
-    this.playerY = Math.round(game.canvas.height / 2);
+    this.playerX = Math.round(canvas.width / 2);
+    this.playerY = Math.round(canvas.height / 2);
     this.targetX = this.playerX;
     this.targetY = this.playerY;
     
@@ -78,8 +79,8 @@ game.newState('demo', {
   },
   
   resize: function () {
-    var widthRatio = game.canvas.width / game.canvas.previousWidth;
-    var heightRatio = game.canvas.height / game.canvas.previousHeight;
+    var widthRatio = canvas.width / canvas.previousWidth;
+    var heightRatio = canvas.height / canvas.previousHeight;
     
     this.playerX = Math.round(this.playerX * widthRatio);
     this.playerY = Math.round(this.playerY * heightRatio);
@@ -93,71 +94,65 @@ game.newState('demo', {
   
   drawPlayer: function () {
     // body
-    game.canvas.context.fillStyle = '#eee';
-    game.canvas.context.strokeStyle = '#333';
-    game.canvas.context.beginPath();
-    game.canvas.context.arc(this.playerX, this.playerY, 20, 0, 360);
-    game.canvas.context.fill();
-    game.canvas.context.stroke();
+    canvas.context.fillStyle = '#eee';
+    canvas.context.strokeStyle = '#333';
+    canvas.context.beginPath();
+    canvas.context.arc(this.playerX, this.playerY, 20, 0, 180);
+    canvas.context.fill();
+    canvas.context.stroke();
     
     // orange dot
-    game.canvas.context.fillStyle = '#ca601e';
-    game.canvas.context.strokeStyle = '#ca601e';
-    game.canvas.context.beginPath();
-    game.canvas.context.arc(this.playerX, this.playerY, 12, 0, 360);
-    game.canvas.context.fill();
-    game.canvas.context.stroke();
+    canvas.context.fillStyle = '#ca601e';
+    canvas.context.strokeStyle = '#ca601e';
+    canvas.context.beginPath();
+    canvas.context.arc(this.playerX, this.playerY, 12, 0, 180);
+    canvas.context.fill();
+    canvas.context.stroke();
     
     // silver dot
-    game.canvas.context.fillStyle = '#ddd';
-    game.canvas.context.beginPath();
-    game.canvas.context.arc(this.playerX, this.playerY, 8, 0, 360);
-    game.canvas.context.fill();
+    canvas.context.fillStyle = '#ddd';
+    canvas.context.beginPath();
+    canvas.context.arc(this.playerX, this.playerY, 8, 0, 180);
+    canvas.context.fill();
     
     // head
-    game.canvas.context.fillStyle = '#eee';
-    game.canvas.context.strokeStyle = '#333';
-    game.canvas.context.beginPath();
-    game.canvas.context.arc(this.playerX, this.playerY - 22, 10, (Math.PI/180)*150, (Math.PI/180)*30);
-    game.canvas.context.arc(this.playerX, this.playerY - 42, 26, (Math.PI/180)*71, (Math.PI/180)*109);
-    game.canvas.context.fill();
-    game.canvas.context.stroke();
+    canvas.context.fillStyle = '#eee';
+    canvas.context.strokeStyle = '#333';
+    canvas.context.beginPath();
+    canvas.context.arc(this.playerX, this.playerY - 22, 10, (Math.PI/180)*150, (Math.PI/180)*30);
+    canvas.context.arc(this.playerX, this.playerY - 42, 26, (Math.PI/180)*71, (Math.PI/180)*109);
+    canvas.context.fill();
+    canvas.context.stroke();
     
     // eyes
-    game.canvas.context.fillStyle = '#333';
-    game.canvas.context.strokeStyle = '#333';
-    game.canvas.context.beginPath();
-    game.canvas.context.arc(this.playerX, this.playerY - 25, 3, 0, 360);
-    game.canvas.context.fill();
-    game.canvas.context.stroke();
+    canvas.context.fillStyle = '#333';
+    canvas.context.strokeStyle = '#333';
+    canvas.context.beginPath();
+    canvas.context.arc(this.playerX, this.playerY - 25, 3, 0, 180);
+    canvas.context.fill();
+    canvas.context.stroke();
     
-    game.canvas.context.fillStyle = '#333';
-    game.canvas.context.strokeStyle = '#333';
-    game.canvas.context.beginPath();
-    game.canvas.context.arc(this.playerX + 5, this.playerY - 21, 1, 0, 360);
-    game.canvas.context.fill();
-    game.canvas.context.stroke();
+    canvas.context.fillStyle = '#333';
+    canvas.context.strokeStyle = '#333';
+    canvas.context.beginPath();
+    canvas.context.arc(this.playerX + 5, this.playerY - 21, 1, 0, 180);
+    canvas.context.fill();
+    canvas.context.stroke();
     
     // antenia
-    game.canvas.context.fillStyle = '#333';
-    game.canvas.context.strokeStyle = '#333';
-    game.canvas.context.beginPath();
-    game.canvas.context.moveTo(this.playerX, this.playerY - 30);
-    game.canvas.context.lineTo(this.playerX, this.playerY - 40);
-    game.canvas.context.stroke();
-    game.canvas.context.closePath();
-    
+    canvas.context.fillStyle = '#333';
+    canvas.context.strokeStyle = '#333';
+    canvas.context.beginPath();
+    canvas.context.moveTo(this.playerX, this.playerY - 30);
+    canvas.context.lineTo(this.playerX, this.playerY - 40);
+    canvas.context.stroke();
+    canvas.context.closePath();
   }
 });
 
 game.loadState('demo');
 game.start();
 },{"../../../src/game.js":4}],2:[function(require,module,exports){
-/*
-  TODO:
-    retinaify canvas
-*/
-
 var Eventer = require('./eventer.js');
 var WindowSizeManager = require('./window_size_manager.js');
 
@@ -179,7 +174,7 @@ CanvasManager.prototype.clear = function () {
   // clears the canavs so that it is ready to be redrawn
   // TODO: have dirty areas marked for clearing to be more effciant,
   //  rather than clearing the whole thing?
-  this.canvas.width = this.canvas.width;
+  this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 };
 
 // Private
@@ -205,20 +200,42 @@ CanvasManager.prototype._setSizeData = function () {
 };
 
 CanvasManager.prototype._setCanvasSize = function () {
+  this.devicePixelRatio = (window.devicePixelRatio > 1)? window.devicePixelRatio : 1;
+  
   if (this.scaleType === 'scale') {
-    // Scale the canvas down so that it fits the window but keeps it's proportions
-    // Scaleing is done with css max-width & max-height
-    this.previousWidth = this.width || this.canvas.width;
-    this.previousHeight = this.height || this.canvas.height;
-    this.width = this.canvas.width = this.canvas.width;
-    this.height = this.canvas.height = this.canvas.height;
+    this._setCanvasSizeToScale();
+    
   } else if (this.scaleType === 'full') {
-    // Resize the canvas to fill the window
-    this.previousWidth = this.width || window.innerWidth;
-    this.previousHeight = this.height || window.innerHeight;
-    this.width = this.canvas.width = window.innerWidth;
-    this.height = this.canvas.height = window.innerHeight;
+    this._setCanvasSizeToFull();
   }
+  
+  this.width = this.canvas.width / this.devicePixelRatio;
+  this.height = this.canvas.height / this.devicePixelRatio;
+  this.context.scale(this.devicePixelRatio, this.devicePixelRatio);
+};
+
+CanvasManager.prototype._setCanvasSizeToScale = function () {
+  // scale canvas for retina and high pixel devices
+  // if scaling only do it the first time
+  if (this.width === undefined && this.height === undefined && this.devicePixelRatio > 1) {
+    this.canvas.width = this.canvas.width * this.devicePixelRatio;
+    this.canvas.height = this.canvas.height * this.devicePixelRatio;
+  }
+  
+  // Scale the canvas down so that it fits the window but keeps it's proportions
+  // Scaleing is done with css max-width & max-height
+  this.previousWidth = this.width || this.canvas.width;
+  this.previousHeight = this.height || this.canvas.height;
+  this.canvas.width = this.canvas.width;
+  this.canvas.height = this.canvas.height;
+};
+
+CanvasManager.prototype._setCanvasSizeToFull = function () {
+  // Resize the canvas to fill the window
+  this.previousWidth = this.width || window.innerWidth;
+  this.previousHeight = this.height || window.innerHeight;
+  this.canvas.width = window.innerWidth * this.devicePixelRatio;
+  this.canvas.height = window.innerHeight * this.devicePixelRatio;
 };
 
 module.exports = CanvasManager;
@@ -265,7 +282,9 @@ module.exports = Eventer;
 },{}],4:[function(require,module,exports){
 /*
   TODO:
-    pause/stop on window blur
+    - pause/stop on window blur
+    - world vs camera/ world largr than canavs; player centered to canvas
+    - collision detection
 */
 
 var CanvasManager = require('./canvas_manager.js');
@@ -273,8 +292,6 @@ var StateManager = require('./state_manager.js');
 var Loop = require('./loop.js');
 
 var Game = function (canvasSelector, scaleType) {
-  var scaleType = scaleType || 'full';
-  
   this.canvas = new CanvasManager(canvasSelector, scaleType);
   this.stateManager = new StateManager(this.canvas);
   this.loop = new Loop(this.stateManager);
