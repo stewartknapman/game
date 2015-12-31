@@ -22,6 +22,11 @@ game.newState('demo', {
     document.addEventListener('click', function (event) {
       _this.targetX = Math.round(event.x);
       _this.targetY = Math.round(event.y);
+      
+      // don't start the game loop until we need it
+      if (!game.isRunning) {
+        game.start();
+      }
     });
   },
   
@@ -151,17 +156,17 @@ game.newState('demo', {
 });
 
 game.loadState('demo');
-game.start();
+// game.start();
 },{"../../src/game.js":4}],2:[function(require,module,exports){
 var Eventer = require('./eventer.js');
-var WindowSizeManager = require('./window_size_manager.js');
+var MediaQueryManager = require('./mq_manager.js');
 
 var CanvasManager = function (canvasSelector, scaleType) {
   new Eventer(this);
   this.canvas = document.querySelector(canvasSelector);
   
   if (this.canvas.getContext) {
-    this.window = new WindowSizeManager();
+    this.mq = new MediaQueryManager();
     this.context = this.canvas.getContext('2d');
     this.scaleType = scaleType || 'full';
   
@@ -181,7 +186,7 @@ CanvasManager.prototype.clear = function () {
 
 CanvasManager.prototype._addEventListeners = function () {
   var _this = this;
-  this.window.on('resize', function() {
+  this.mq.on('resize', function() {
     _this._setSizeData();
     _this.trigger('resize');
   });
@@ -196,7 +201,7 @@ CanvasManager.prototype._setSizeData = function () {
   this.windowOrientation = (window.innerWidth > window.innerHeight)? 'landscape' : 'portrait';
   
   // Set the current media query size of the window
-  this.windowMQSize = this.window.mqSize;
+  this.mqSize = this.mq.size;
 };
 
 CanvasManager.prototype._setCanvasSize = function () {
@@ -239,7 +244,7 @@ CanvasManager.prototype._setCanvasSizeToFull = function () {
 };
 
 module.exports = CanvasManager;
-},{"./eventer.js":3,"./window_size_manager.js":8}],3:[function(require,module,exports){
+},{"./eventer.js":3,"./mq_manager.js":6}],3:[function(require,module,exports){
 /*
   Custom events object
   - Turns an object into one that can fire custome events: https://gist.github.com/stewartknapman/f49fa09a10bf545610cf
@@ -296,6 +301,7 @@ var Game = function (canvasSelector, scaleType) {
   this.canvas = new CanvasManager(canvasSelector, scaleType);
   this.stateManager = new StateManager(this.canvas);
   this.loop = new Loop(this.stateManager);
+  this.isRunning = false;
   
   this._addEventListeners();
 };
@@ -312,10 +318,12 @@ Game.prototype.loadState = function (stateId) {
 // Start and Stop(?)
 
 Game.prototype.start = function () {
+  this.isRunning = true;
   this.loop.startLoop();
 };
 
 Game.prototype.stop = function () {
+  this.isRunning = false;
   this.loop.stopLoop();
 };
 
@@ -329,7 +337,7 @@ Game.prototype._addEventListeners = function () {
 };
 
 module.exports = Game;
-},{"./canvas_manager.js":2,"./loop.js":5,"./state_manager.js":7}],5:[function(require,module,exports){
+},{"./canvas_manager.js":2,"./loop.js":5,"./state_manager.js":8}],5:[function(require,module,exports){
 var instance;
 var Loop = function (stateManager) {
   if (instance) {
@@ -360,6 +368,53 @@ Loop.prototype.stopLoop = function () {
 
 module.exports = Loop;
 },{}],6:[function(require,module,exports){
+var Eventer = require('./eventer.js');
+var instance;
+
+var MediaQueryManager = function () {
+  if (instance) {
+    return instance;
+  }
+  
+	Object.defineProperty(this, 'size', {
+		get: function () {
+      var content = window.getComputedStyle(document.body,':after').getPropertyValue('content');
+      content = this._removeQuotes(content);
+      return JSON.parse(content);
+		}
+	});
+  
+  new Eventer(this);
+  this._addEventListeners();
+  
+  instance = this;
+};
+
+// Private
+
+MediaQueryManager.prototype._addEventListeners = function () {
+  var _this = this;
+  window.addEventListener('resize', function (event) {
+    _this._onResize(event);
+  });
+  window.addEventListener('orientationchange', function (event) {
+    _this._onResize(event);
+  });
+};
+
+MediaQueryManager.prototype._onResize = function (event) {
+  this.trigger('resize', [this.mqSize]);
+};
+
+MediaQueryManager.prototype._removeQuotes = function (string) {
+   if (typeof string === 'string' || string instanceof String) {
+      string = string.replace(/^['"]+|\s+|\\|(;\s?})+|['"]$/g, '');
+   }
+   return string;
+};
+
+module.exports = MediaQueryManager;
+},{"./eventer.js":3}],7:[function(require,module,exports){
 var State = function (id, object) {
   this.id = id;
   this._setMethods(object);
@@ -382,7 +437,7 @@ State.prototype._setMethods = function (object) {
 };
 
 module.exports = State;
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 var State = require('./state.js');
 
 var States = function (canvas) {
@@ -419,44 +474,4 @@ States.prototype.resizeCurrentState = function () {
 };
 
 module.exports = States;
-},{"./state.js":6}],8:[function(require,module,exports){
-var Eventer = require('./eventer.js');
-var instance;
-
-var WindowSizeManager = function () {
-  if (instance) {
-    return instance;
-  }
-  
-	Object.defineProperty(this, 'mqSize', {
-		get: function () {
-      return window.getComputedStyle(document.body,':after')
-      .getPropertyValue('content')
-      .replace(/['"]/g, '');
-		}
-	});
-  
-  new Eventer(this);
-  this._addEventListeners();
-  
-  instance = this;
-};
-
-// Private
-
-WindowSizeManager.prototype._addEventListeners = function () {
-  var _this = this;
-  window.addEventListener('resize', function (event) {
-    _this._onResize(event);
-  });
-  window.addEventListener('orientationchange', function (event) {
-    _this._onResize(event);
-  });
-};
-
-WindowSizeManager.prototype._onResize = function (event) {
-  this.trigger('resize', [this.mqSize]);
-};
-
-module.exports = WindowSizeManager;
-},{"./eventer.js":3}]},{},[1]);
+},{"./state.js":7}]},{},[1]);

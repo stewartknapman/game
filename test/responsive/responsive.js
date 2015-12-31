@@ -1,13 +1,13 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 var Eventer = require('./eventer.js');
-var WindowSizeManager = require('./window_size_manager.js');
+var MediaQueryManager = require('./mq_manager.js');
 
 var CanvasManager = function (canvasSelector, scaleType) {
   new Eventer(this);
   this.canvas = document.querySelector(canvasSelector);
   
   if (this.canvas.getContext) {
-    this.window = new WindowSizeManager();
+    this.mq = new MediaQueryManager();
     this.context = this.canvas.getContext('2d');
     this.scaleType = scaleType || 'full';
   
@@ -27,7 +27,7 @@ CanvasManager.prototype.clear = function () {
 
 CanvasManager.prototype._addEventListeners = function () {
   var _this = this;
-  this.window.on('resize', function() {
+  this.mq.on('resize', function() {
     _this._setSizeData();
     _this.trigger('resize');
   });
@@ -42,7 +42,7 @@ CanvasManager.prototype._setSizeData = function () {
   this.windowOrientation = (window.innerWidth > window.innerHeight)? 'landscape' : 'portrait';
   
   // Set the current media query size of the window
-  this.windowMQSize = this.window.mqSize;
+  this.mqSize = this.mq.size;
 };
 
 CanvasManager.prototype._setCanvasSize = function () {
@@ -85,7 +85,7 @@ CanvasManager.prototype._setCanvasSizeToFull = function () {
 };
 
 module.exports = CanvasManager;
-},{"./eventer.js":2,"./window_size_manager.js":3}],2:[function(require,module,exports){
+},{"./eventer.js":2,"./mq_manager.js":3}],2:[function(require,module,exports){
 /*
   Custom events object
   - Turns an object into one that can fire custome events: https://gist.github.com/stewartknapman/f49fa09a10bf545610cf
@@ -129,16 +129,16 @@ module.exports = Eventer;
 var Eventer = require('./eventer.js');
 var instance;
 
-var WindowSizeManager = function () {
+var MediaQueryManager = function () {
   if (instance) {
     return instance;
   }
   
-	Object.defineProperty(this, 'mqSize', {
+	Object.defineProperty(this, 'size', {
 		get: function () {
-      return window.getComputedStyle(document.body,':after')
-      .getPropertyValue('content')
-      .replace(/['"]/g, '');
+      var content = window.getComputedStyle(document.body,':after').getPropertyValue('content');
+      content = this._removeQuotes(content);
+      return JSON.parse(content);
 		}
 	});
   
@@ -150,7 +150,7 @@ var WindowSizeManager = function () {
 
 // Private
 
-WindowSizeManager.prototype._addEventListeners = function () {
+MediaQueryManager.prototype._addEventListeners = function () {
   var _this = this;
   window.addEventListener('resize', function (event) {
     _this._onResize(event);
@@ -160,11 +160,18 @@ WindowSizeManager.prototype._addEventListeners = function () {
   });
 };
 
-WindowSizeManager.prototype._onResize = function (event) {
+MediaQueryManager.prototype._onResize = function (event) {
   this.trigger('resize', [this.mqSize]);
 };
 
-module.exports = WindowSizeManager;
+MediaQueryManager.prototype._removeQuotes = function (string) {
+   if (typeof string === 'string' || string instanceof String) {
+      string = string.replace(/^['"]+|\s+|\\|(;\s?})+|['"]$/g, '');
+   }
+   return string;
+};
+
+module.exports = MediaQueryManager;
 },{"./eventer.js":2}],4:[function(require,module,exports){
 var CanvasManager = require('../../../src/canvas_manager.js');
 var canvas = new CanvasManager('#main', scaleType);
@@ -203,7 +210,7 @@ var scale = function () {
   if (scaleType === 'scale') {
     scale_size = 1;
   } else if (scaleType === 'full') {
-    switch (canvas.windowMQSize) {
+    switch (canvas.mqSize.width) {
       case 'xs':
         scale_size = 1;
         break;

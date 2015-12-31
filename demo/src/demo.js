@@ -21,6 +21,11 @@ game.newState('demo', {
     document.addEventListener('click', function (event) {
       _this.targetX = Math.round(event.x);
       _this.targetY = Math.round(event.y);
+      
+      // don't start the game loop until we need it
+      if (!game.isRunning) {
+        game.start();
+      }
     });
   },
   
@@ -150,4 +155,4 @@ game.newState('demo', {
 });
 
 game.loadState('demo');
-game.start();
+// game.start();

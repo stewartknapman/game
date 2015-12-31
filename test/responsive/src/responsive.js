@@ -35,7 +35,7 @@ var scale = function () {
   if (scaleType === 'scale') {
     scale_size = 1;
   } else if (scaleType === 'full') {
-    switch (canvas.windowMQSize) {
+    switch (canvas.mqSize.width) {
       case 'xs':
         scale_size = 1;
         break;

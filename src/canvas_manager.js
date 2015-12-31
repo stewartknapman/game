@@ -1,12 +1,12 @@
 var Eventer = require('./eventer.js');
-var WindowSizeManager = require('./window_size_manager.js');
+var MediaQueryManager = require('./mq_manager.js');
 
 var CanvasManager = function (canvasSelector, scaleType) {
   new Eventer(this);
   this.canvas = document.querySelector(canvasSelector);
   
   if (this.canvas.getContext) {
-    this.window = new WindowSizeManager();
+    this.mq = new MediaQueryManager();
     this.context = this.canvas.getContext('2d');
     this.scaleType = scaleType || 'full';
   
@@ -26,7 +26,7 @@ CanvasManager.prototype.clear = function () {
 
 CanvasManager.prototype._addEventListeners = function () {
   var _this = this;
-  this.window.on('resize', function() {
+  this.mq.on('resize', function() {
     _this._setSizeData();
     _this.trigger('resize');
   });
@@ -41,7 +41,7 @@ CanvasManager.prototype._setSizeData = function () {
   this.windowOrientation = (window.innerWidth > window.innerHeight)? 'landscape' : 'portrait';
   
   // Set the current media query size of the window
-  this.windowMQSize = this.window.mqSize;
+  this.mqSize = this.mq.size;
 };
 
 CanvasManager.prototype._setCanvasSize = function () {
