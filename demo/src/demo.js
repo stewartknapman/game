@@ -4,7 +4,7 @@
     - make bb-8's orange circles better
 */
 
-var Game = require('../../../src/game.js');
+var Game = require('../../src/game.js');
 var game = new Game('#main');
 var canvas = game.canvas;
 window.game = game;

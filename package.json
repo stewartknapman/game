@@ -5,11 +5,11 @@
   "main": "src/game.js",
   "scripts": {
     "build": "npm run demo && npm run test:responsive",
-    "build:watch": "watch 'npm run build' ./demo/src/js ./test/responsive/js ./src",
-    "demo": "browserify ./demo/src/js/demo.js > ./demo/demo.js",
-    "demo:watch": "watch 'npm run demo' ./demo/src/js ./src",
-    "test:responsive": "browserify ./test/responsive/js/_responsive.js > ./test/responsive/responsive.js",
-    "test:responsive:watch": "watch 'npm run test:responsive' ./test/responsive/js ./src"
+    "build:watch": "watch 'npm run build' ./demo/src ./test/responsive/src ./src",
+    "demo": "browserify ./demo/src/demo.js > ./demo/demo.js",
+    "demo:watch": "watch 'npm run demo' ./demo/src ./src",
+    "test:responsive": "browserify ./test/responsive/src/responsive.js > ./test/responsive/responsive.js",
+    "test:responsive:watch": "watch 'npm run test:responsive' ./test/responsive/src ./src"
   },
   "repository": {
     "type": "git",
