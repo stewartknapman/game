@@ -14,7 +14,13 @@ var Game = function (canvasSelector, scaleType) {
   this.canvas = new CanvasManager(canvasSelector, scaleType);
   this.stateManager = new StateManager(this.canvas);
   this.loop = new Loop(this.stateManager);
-  this.isRunning = false;
+  
+  Object.defineProperty(this, 'isRunning', {
+    get: function () {
+      return this.loop.isRunning;
+    }
+  });
+  
   
   this._addEventListeners();
 };
@@ -31,12 +37,10 @@ Game.prototype.loadState = function (stateId) {
 // Start and Stop(?)
 
 Game.prototype.start = function () {
-  this.isRunning = true;
   this.loop.startLoop();
 };
 
 Game.prototype.stop = function () {
-  this.isRunning = false;
   this.loop.stopLoop();
 };
 

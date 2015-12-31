@@ -6,6 +6,7 @@ var Loop = function (stateManager) {
   
   this.stateManager = stateManager;
   this.currentLoop = null;
+  this.isRunning = false;
   
   instance = this;
 };
@@ -19,11 +20,16 @@ Loop.prototype.main = function () {
 };
 
 Loop.prototype.startLoop = function () {
-  this.main();
+  // don't cause multiple loops by starting again if it's already running
+  if (!this.isRunning) {
+    this.isRunning = true;
+    this.main();
+  }
 };
 
 Loop.prototype.stopLoop = function () {
   window.cancelAnimationFrame(this.currentLoop);
+  this.isRunning = false;
 };
 
 module.exports = Loop;
