@@ -1,9 +1,9 @@
-var CanvasManager = require('../../src/canvas_manager.js');
+var CanvasManager = require('../../../src/canvas_manager.js');
 var canvas = new CanvasManager('#main', scaleType);
 
-var draw_background = function (scale_size) {
-  var limit = 1500;
-  var step = 10 * scale_size;
+var draw_background = function () {
+  var limit = 2000;
+  var step = 10;
   
   for (var i = 0; i < (limit/step); i++) {
     if (i%2 === 0) {
@@ -20,44 +20,49 @@ var draw_background = function (scale_size) {
   }
 };
 
-var draw_box = function (scale_size) {
-  var width = 100 * scale_size;
-  var height = 100 * scale_size;
-  var x = Math.round((canvas.width - width) / 2);
-  var y = Math.round((canvas.height - height) / 2);
+var draw_circle = function (scale_size) {
+  var radius = 50; // * scale_size;
+  var x = Math.round(canvas.width / 2);
+  var y = Math.round(canvas.height / 2);
   
   canvas.context.fillStyle = '#03b9e3';
-  canvas.context.fillRect(x, y, width, height);
+  canvas.context.arc(x, y, radius, 0, 180);
+  canvas.context.fill();
 };
 
-var draw = function () {
+var scale = function () {
   var scale_size;
   if (scaleType === 'scale') {
     scale_size = 1;
   } else if (scaleType === 'full') {
     switch (canvas.windowMQSize) {
       case 'xs':
-        scale_size = 0.5;
+        scale_size = 1;
         break;
       case 'sm':
-        scale_size = 1;
+        scale_size = 1.25;
         break;
       case 'md':
         scale_size = 1.5;
         break;
       case 'lg':
-        scale_size = 2;
+        scale_size = 1.75;
         break;
       case 'xl':
-        scale_size = 2.5;
+        scale_size = 2;
         break;
       default:
         scale_size = 1;
     }
   }
+  return scale_size;
+};
+
+var draw = function () {
+  var scale_size = scale();
   
-  draw_background(scale_size);
-  draw_box(scale_size);
+  draw_background();
+  draw_circle(scale_size);
 };
 
 canvas.on('resize', function () {

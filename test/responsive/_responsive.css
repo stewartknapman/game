@@ -63,6 +63,5 @@ body:after {
   transform: translate(-50%, -50%);
 }
 .visible {
-  background-color: #eee;
   border: #ddd dashed 1px;
 }

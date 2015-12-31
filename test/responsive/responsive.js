@@ -16,6 +16,13 @@ var CanvasManager = function (canvasSelector, scaleType) {
   }
 };
 
+CanvasManager.prototype.clear = function () {
+  // clears the canavs so that it is ready to be redrawn
+  // TODO: have dirty areas marked for clearing to be more effciant,
+  //  rather than clearing the whole thing?
+  this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+};
+
 // Private
 
 CanvasManager.prototype._addEventListeners = function () {
@@ -35,20 +42,46 @@ CanvasManager.prototype._setSizeData = function () {
   this.windowOrientation = (window.innerWidth > window.innerHeight)? 'landscape' : 'portrait';
   
   // Set the current media query size of the window
-  if (this.window.mqSize !== this.windowMQSize) this.windowMQSize = this.window.mqSize;
+  this.windowMQSize = this.window.mqSize;
 };
 
 CanvasManager.prototype._setCanvasSize = function () {
+  this.devicePixelRatio = (window.devicePixelRatio > 1)? window.devicePixelRatio : 1;
+  
   if (this.scaleType === 'scale') {
-    // Scale the canvas down so that it fits the window but keeps it's proportions
-    // Scaleing is done with css max-width & max-height
-    if (this.canvas.width !== this.width) this.width = this.canvas.width = this.canvas.width;
-    if (this.canvas.height !== this.height) this.height = this.canvas.height = this.canvas.height;
+    this._setCanvasSizeToScale();
+    
   } else if (this.scaleType === 'full') {
-    // Resize the canvas to fill the window
-    if (window.innerWidth !== this.width) this.width = this.canvas.width = window.innerWidth;
-    if (window.innerHeight !== this.height) this.height = this.canvas.height = window.innerHeight;
+    this._setCanvasSizeToFull();
   }
+  
+  this.width = this.canvas.width / this.devicePixelRatio;
+  this.height = this.canvas.height / this.devicePixelRatio;
+  this.context.scale(this.devicePixelRatio, this.devicePixelRatio);
+};
+
+CanvasManager.prototype._setCanvasSizeToScale = function () {
+  // scale canvas for retina and high pixel devices
+  // if scaling only do it the first time
+  if (this.width === undefined && this.height === undefined && this.devicePixelRatio > 1) {
+    this.canvas.width = this.canvas.width * this.devicePixelRatio;
+    this.canvas.height = this.canvas.height * this.devicePixelRatio;
+  }
+  
+  // Scale the canvas down so that it fits the window but keeps it's proportions
+  // Scaleing is done with css max-width & max-height
+  this.previousWidth = this.width || this.canvas.width;
+  this.previousHeight = this.height || this.canvas.height;
+  this.canvas.width = this.canvas.width;
+  this.canvas.height = this.canvas.height;
+};
+
+CanvasManager.prototype._setCanvasSizeToFull = function () {
+  // Resize the canvas to fill the window
+  this.previousWidth = this.width || window.innerWidth;
+  this.previousHeight = this.height || window.innerHeight;
+  this.canvas.width = window.innerWidth * this.devicePixelRatio;
+  this.canvas.height = window.innerHeight * this.devicePixelRatio;
 };
 
 module.exports = CanvasManager;
@@ -133,12 +166,12 @@ WindowSizeManager.prototype._onResize = function (event) {
 
 module.exports = WindowSizeManager;
 },{"./eventer.js":2}],4:[function(require,module,exports){
-var CanvasManager = require('../../src/canvas_manager.js');
+var CanvasManager = require('../../../src/canvas_manager.js');
 var canvas = new CanvasManager('#main', scaleType);
 
-var draw_background = function (scale_size) {
-  var limit = 1500;
-  var step = 10 * scale_size;
+var draw_background = function () {
+  var limit = 2000;
+  var step = 10;
   
   for (var i = 0; i < (limit/step); i++) {
     if (i%2 === 0) {
@@ -155,44 +188,49 @@ var draw_background = function (scale_size) {
   }
 };
 
-var draw_box = function (scale_size) {
-  var width = 100 * scale_size;
-  var height = 100 * scale_size;
-  var x = Math.round((canvas.width - width) / 2);
-  var y = Math.round((canvas.height - height) / 2);
+var draw_circle = function (scale_size) {
+  var radius = 50; // * scale_size;
+  var x = Math.round(canvas.width / 2);
+  var y = Math.round(canvas.height / 2);
   
   canvas.context.fillStyle = '#03b9e3';
-  canvas.context.fillRect(x, y, width, height);
+  canvas.context.arc(x, y, radius, 0, 180);
+  canvas.context.fill();
 };
 
-var draw = function () {
+var scale = function () {
   var scale_size;
   if (scaleType === 'scale') {
     scale_size = 1;
   } else if (scaleType === 'full') {
     switch (canvas.windowMQSize) {
       case 'xs':
-        scale_size = 0.5;
+        scale_size = 1;
         break;
       case 'sm':
-        scale_size = 1;
+        scale_size = 1.25;
         break;
       case 'md':
         scale_size = 1.5;
         break;
       case 'lg':
-        scale_size = 2;
+        scale_size = 1.75;
         break;
       case 'xl':
-        scale_size = 2.5;
+        scale_size = 2;
         break;
       default:
         scale_size = 1;
     }
   }
+  return scale_size;
+};
+
+var draw = function () {
+  var scale_size = scale();
   
-  draw_background(scale_size);
-  draw_box(scale_size);
+  draw_background();
+  draw_circle(scale_size);
 };
 
 canvas.on('resize', function () {
@@ -202,4 +240,4 @@ canvas.on('resize', function () {
 window.onload = function () {
   draw();
 };
-},{"../../src/canvas_manager.js":1}]},{},[4]);
+},{"../../../src/canvas_manager.js":1}]},{},[4]);

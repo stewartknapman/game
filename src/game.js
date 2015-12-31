@@ -1,6 +1,8 @@
 /*
   TODO:
-    pause/stop on window blur
+    - pause/stop on window blur
+    - world vs camera/ world largr than canavs; player centered to canvas
+    - collision detection
 */
 
 var CanvasManager = require('./canvas_manager.js');
@@ -8,8 +10,6 @@ var StateManager = require('./state_manager.js');
 var Loop = require('./loop.js');
 
 var Game = function (canvasSelector, scaleType) {
-  var scaleType = scaleType || 'full';
-  
   this.canvas = new CanvasManager(canvasSelector, scaleType);
   this.stateManager = new StateManager(this.canvas);
   this.loop = new Loop(this.stateManager);
