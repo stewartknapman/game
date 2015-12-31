@@ -5,7 +5,7 @@
     - make bb-8's orange circles better
 */
 
-var Game = require('../../../src/game.js');
+var Game = require('../../src/game.js');
 var game = new Game('#main');
 var canvas = game.canvas;
 window.game = game;
@@ -152,7 +152,7 @@ game.newState('demo', {
 
 game.loadState('demo');
 game.start();
-},{"../../../src/game.js":4}],2:[function(require,module,exports){
+},{"../../src/game.js":4}],2:[function(require,module,exports){
 var Eventer = require('./eventer.js');
 var WindowSizeManager = require('./window_size_manager.js');
 
