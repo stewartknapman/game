@@ -285,6 +285,7 @@ module.exports = Eventer;
     - pause/stop on window blur
     - world vs camera/ world largr than canavs; player centered to canvas
     - collision detection
+    - rename window size manager and use height mq's as well as width ones
 */
 
 var CanvasManager = require('./canvas_manager.js');

@@ -21,7 +21,7 @@ var draw_background = function () {
 };
 
 var draw_circle = function (scale_size) {
-  var radius = 50; // * scale_size;
+  var radius = 50 * scale_size;
   var x = Math.round(canvas.width / 2);
   var y = Math.round(canvas.height / 2);
   
