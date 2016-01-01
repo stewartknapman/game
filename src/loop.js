@@ -7,6 +7,9 @@ var Loop = function (stateManager) {
   this.stateManager = stateManager;
   this.currentLoop = null;
   this.isRunning = false;
+  this.blurWhileRunning = false;
+  
+  this._addEventListeners();
   
   instance = this;
 };
@@ -30,6 +33,25 @@ Loop.prototype.startLoop = function () {
 Loop.prototype.stopLoop = function () {
   window.cancelAnimationFrame(this.currentLoop);
   this.isRunning = false;
+};
+
+// Private
+
+Loop.prototype._addEventListeners = function () {
+  var _this = this;
+  window.addEventListener('blur', function () {
+    if (_this.isRunning) {
+      _this.blurWhileRunning = true;
+      _this.stopLoop();
+    }
+  });
+  
+  window.addEventListener('focus', function () {
+    if (_this.blurWhileRunning) {
+      _this.blurWhileRunning = false;
+      _this.startLoop();
+    }
+  });
 };
 
 module.exports = Loop;
