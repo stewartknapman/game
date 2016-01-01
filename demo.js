@@ -18,6 +18,11 @@ game.newState('demo', {
     this.targetX = this.playerX;
     this.targetY = this.playerY;
     
+    this.gridSize = 60;
+    this.worldSize = 2100;
+    this.wallFrequency = 10;
+    this.walls = this.buildWalls();
+    
     var _this = this;
     document.addEventListener('click', function (event) {
       _this.targetX = Math.round(event.x);
@@ -94,6 +99,7 @@ game.newState('demo', {
   },
   
   render: function () { // Render is called after Init, Update & Resize
+    this.drawWalls();
     this.drawPlayer();
   },
   
@@ -152,6 +158,51 @@ game.newState('demo', {
     canvas.context.lineTo(this.playerX, this.playerY - 40);
     canvas.context.stroke();
     canvas.context.closePath();
+  },
+  
+  buildWalls: function () {
+    var gridCount = this.worldSize / this.gridSize;
+    var wallMap = [];
+    
+    for (var i = 0; i < gridCount; i++) {
+      var row = [];
+      for (var j = 0; j < gridCount; j++) {
+        var w = 0;
+        if (i === 0 || i === gridCount-1) {
+          w = 1; // top & bottom edge
+        } else if (j === 0 || j === gridCount-1) {
+          w = 1; // left & right edge
+        } else {
+          var r = Math.round(Math.random() * 100);
+          if (r % this.wallFrequency === 0) {
+            w = 1;
+          }
+        }
+        row.push(w);
+      }
+      wallMap.push(row);
+    }
+    
+    return wallMap;
+  },
+  
+  drawWalls: function () {
+    for (var i = 0; i < this.walls.length; i++) {
+      var row = this.walls[i];
+      for (var j = 0; j < row.length; j++) {
+        var cell = row[j];
+        if (cell == 1) {
+          var x = this.gridSize * j;
+          var y = this.gridSize * i;
+          this.drawWall(x, y);
+        }
+      }
+    }
+  },
+  
+  drawWall: function (x, y) {
+    canvas.context.fillStyle = '#ccc';
+    canvas.context.fillRect(x, y, this.gridSize, this.gridSize);
   }
 });
 
@@ -351,6 +402,9 @@ var Loop = function (stateManager) {
   this.stateManager = stateManager;
   this.currentLoop = null;
   this.isRunning = false;
+  this.blurWhileRunning = false;
+  
+  this._addEventListeners();
   
   instance = this;
 };
@@ -374,6 +428,25 @@ Loop.prototype.startLoop = function () {
 Loop.prototype.stopLoop = function () {
   window.cancelAnimationFrame(this.currentLoop);
   this.isRunning = false;
+};
+
+// Private
+
+Loop.prototype._addEventListeners = function () {
+  var _this = this;
+  window.addEventListener('blur', function () {
+    if (_this.isRunning) {
+      _this.blurWhileRunning = true;
+      _this.stopLoop();
+    }
+  });
+  
+  window.addEventListener('focus', function () {
+    if (_this.blurWhileRunning) {
+      _this.blurWhileRunning = false;
+      _this.startLoop();
+    }
+  });
 };
 
 module.exports = Loop;
