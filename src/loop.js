@@ -1,9 +1,10 @@
 var instance;
-var Loop = function (stateManager) {
+var Loop = function (canvas, stateManager) {
   if (instance) {
     return instance;
   }
   
+  this.canvas = canvas;
   this.stateManager = stateManager;
   this.currentLoop = null;
   this.isRunning = false;
@@ -19,6 +20,8 @@ Loop.prototype.main = function () {
   this.currentLoop = window.requestAnimationFrame(function () { 
     _this.main();
   });
+  
+  this.canvas.clear();
   this.stateManager.updateCurrentState();
 };
 

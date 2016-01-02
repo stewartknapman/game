@@ -1,9 +1,7 @@
 /*
   TODO:
-    - pause/stop on window blur
     - world vs camera/ world largr than canavs; player centered to canvas
     - collision detection
-    - rename window size manager and use height mq's as well as width ones
 */
 
 var CanvasManager = require('./canvas_manager.js');
@@ -12,8 +10,8 @@ var Loop = require('./loop.js');
 
 var Game = function (canvasSelector, scaleType) {
   this.canvas = new CanvasManager(canvasSelector, scaleType);
-  this.stateManager = new StateManager(this.canvas);
-  this.loop = new Loop(this.stateManager);
+  this.stateManager = new StateManager();
+  this.loop = new Loop(this.canvas, this.stateManager);
   
   Object.defineProperty(this, 'isRunning', {
     get: function () {
@@ -21,20 +19,19 @@ var Game = function (canvasSelector, scaleType) {
     }
   });
   
-  
   this._addEventListeners();
 };
 
 // Set up states
 Game.prototype.newState = function (stateId, stateObj) {
-  this.stateManager.addState(stateId, stateObj);
+  this.stateManager.addState(stateId, stateObj, this.canvas);
 };
 
 Game.prototype.loadState = function (stateId) {
   this.stateManager.loadState(stateId);
 };
 
-// Start and Stop(?)
+// Start and Stop Loop
 
 Game.prototype.start = function () {
   this.loop.startLoop();

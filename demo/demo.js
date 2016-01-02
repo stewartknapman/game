@@ -1,214 +1,151 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-/*
-  TODO:
-    - collision detection
-    - make bb-8's orange circles better
-*/
-
 var Game = require('../../src/game.js');
 var game = new Game('#main');
-var canvas = game.canvas;
 window.game = game;
 
 game.newState('demo', {
   init: function () {
-    this.playerV = 5;
-    this.playerX = Math.round(canvas.width / 2);
-    this.playerY = Math.round(canvas.height / 2);
-    this.targetX = this.playerX;
-    this.targetY = this.playerY;
     
-    this.gridSize = 60;
-    this.worldSize = 2100;
-    this.wallFrequency = 10;
-    this.walls = this.buildWalls();
+    /*
+      We have acces to the canvas, camera & world
+      The World has layers, which can either be a map or an object
+    */
     
-    var _this = this;
-    document.addEventListener('click', function (event) {
-      _this.targetX = Math.round(event.x);
-      _this.targetY = Math.round(event.y);
+    var numRows = 32,
+      numCols = 32,
+      tileWidth = 64,
+      tileHeight = 64,
+      randomWallFrequency = 10;
       
-      // don't start the game loop until we need it
-      if (!game.isRunning) {
-        game.start();
-      }
+    // if the worlds size is bigger than the canvas then we need to set it.
+    this.world.setSize(tileWidth * numRows, tileHeight * numCols);
+    
+    // create a new map layer
+    // randomly generate a tile map
+    var wallMap = this.buildWallMap(numRows, numCols, randomWallFrequency);
+    var walls = this.world.newMapLayer('walls', numRows, numCols, tileWidth, tileHeight, wallMap);
+    // override layerMaps drawTile method so we have something to draw as we are not using sprites
+    
+    walls.drawTile = function (tile, x, y, c, r) {
+      this.canvas.context.fillStyle = '#ccc';
+      this.canvas.context.fillRect(x, y, tileWidth, tileHeight);
+      
+      this.canvas.context.fillStyle = '#333';
+      this.canvas.context.fillText(c+':'+r, x+10, y+20);
+    };
+    
+    // Input: move camera
+    // BUG: clicking starts loop again after it has been stopped
+    var state = this;
+    document.addEventListener('click', function (event) {
+      // this is a bit wrong, but it proves the camera can move for the most part.
+      var diffX = (state.camera.width / 2) - event.x;
+      var diffY = (state.camera.height / 2) - event.y;
+      var x = state.camera.x - diffX;
+      var y = state.camera.x - diffY;
+      
+      state.camera.moveTo(x, y);
     });
   },
   
   update: function () {
-    if (this.targetX !== this.playerX || this.targetY !== this.playerY) {
-      var diffX = this.playerX - this.targetX;
-      var diffY = this.playerY - this.targetY;      
-      var diffX_pos = (diffX < 0)? diffX * -1 : diffX;
-      var diffY_pos = (diffY < 0)? diffY * -1 : diffY;
-      var velocity = this.playerV;
-      
-      this.move(diffX, diffY, diffX_pos, diffY_pos, velocity);
-    }
-  },
-  
-  move: function (diffX, diffY, diffX_pos, diffY_pos, velocity) {
-    // move along the shortest axis until it's the same as the target
-    // then move along the remaining axis
-    
-    if (this.playerX === this.targetX || this.playerY === this.targetY) {
-      if (diffX_pos > diffY_pos) {
-        this.moveX(diffX, diffX_pos, velocity);
-      } else {
-        this.moveY(diffY, diffY_pos, velocity);
-      }
-    } else {
-      if (diffX_pos < diffY_pos) {
-        this.moveX(diffX, diffX_pos, velocity);
-      } else {
-        this.moveY(diffY, diffY_pos, velocity);
-      }
-    }
-  },
-  
-  moveX: function (diffX, diffX_pos, velocity) {
-    if (diffX_pos < velocity) velocity = diffX_pos;
-    if (diffX > 0) {
-      this.playerX -= velocity;
-    } else {
-      this.playerX += velocity;
-    }
-  },
-  
-  moveY: function (diffY, diffY_pos, velocity) {
-    if (diffY_pos < velocity) velocity = diffY_pos;
-    if (diffY > 0) {
-      this.playerY -= velocity;
-    } else {
-      this.playerY += velocity;
-    }
-  },
-  
-  destroy: function () {
-    
   },
   
   resize: function () {
-    var widthRatio = canvas.width / canvas.previousWidth;
-    var heightRatio = canvas.height / canvas.previousHeight;
-    
-    this.playerX = Math.round(this.playerX * widthRatio);
-    this.playerY = Math.round(this.playerY * heightRatio);
-    this.targetX = Math.round(this.targetX * widthRatio);
-    this.targetY = Math.round(this.targetY * heightRatio);
   },
   
-  render: function () { // Render is called after Init, Update & Resize
-    this.drawWalls();
-    this.drawPlayer();
+  destroy: function () {
   },
   
-  drawPlayer: function () {
-    // body
-    canvas.context.fillStyle = '#eee';
-    canvas.context.strokeStyle = '#333';
-    canvas.context.beginPath();
-    canvas.context.arc(this.playerX, this.playerY, 20, 0, 180);
-    canvas.context.fill();
-    canvas.context.stroke();
-    
-    // orange dot
-    canvas.context.fillStyle = '#ca601e';
-    canvas.context.strokeStyle = '#ca601e';
-    canvas.context.beginPath();
-    canvas.context.arc(this.playerX, this.playerY, 12, 0, 180);
-    canvas.context.fill();
-    canvas.context.stroke();
-    
-    // silver dot
-    canvas.context.fillStyle = '#ddd';
-    canvas.context.beginPath();
-    canvas.context.arc(this.playerX, this.playerY, 8, 0, 180);
-    canvas.context.fill();
-    
-    // head
-    canvas.context.fillStyle = '#eee';
-    canvas.context.strokeStyle = '#333';
-    canvas.context.beginPath();
-    canvas.context.arc(this.playerX, this.playerY - 22, 10, (Math.PI/180)*150, (Math.PI/180)*30);
-    canvas.context.arc(this.playerX, this.playerY - 42, 26, (Math.PI/180)*71, (Math.PI/180)*109);
-    canvas.context.fill();
-    canvas.context.stroke();
-    
-    // eyes
-    canvas.context.fillStyle = '#333';
-    canvas.context.strokeStyle = '#333';
-    canvas.context.beginPath();
-    canvas.context.arc(this.playerX, this.playerY - 25, 3, 0, 180);
-    canvas.context.fill();
-    canvas.context.stroke();
-    
-    canvas.context.fillStyle = '#333';
-    canvas.context.strokeStyle = '#333';
-    canvas.context.beginPath();
-    canvas.context.arc(this.playerX + 5, this.playerY - 21, 1, 0, 180);
-    canvas.context.fill();
-    canvas.context.stroke();
-    
-    // antenia
-    canvas.context.fillStyle = '#333';
-    canvas.context.strokeStyle = '#333';
-    canvas.context.beginPath();
-    canvas.context.moveTo(this.playerX, this.playerY - 30);
-    canvas.context.lineTo(this.playerX, this.playerY - 40);
-    canvas.context.stroke();
-    canvas.context.closePath();
-  },
-  
-  buildWalls: function () {
-    var gridCount = this.worldSize / this.gridSize;
+  buildWallMap: function (numRows, numCols, randomWallFrequency) {
     var wallMap = [];
-    
-    for (var i = 0; i < gridCount; i++) {
-      var row = [];
-      for (var j = 0; j < gridCount; j++) {
+    for (var i = 0; i < numRows; i++) {
+      for (var j = 0; j < numCols; j++) {
         var w = 0;
-        if (i === 0 || i === gridCount-1) {
+        if (i === 0 || i === numRows-1) {
           w = 1; // top & bottom edge
-        } else if (j === 0 || j === gridCount-1) {
+        } else if (j === 0 || j === numCols-1) {
           w = 1; // left & right edge
         } else {
           var r = Math.round(Math.random() * 100);
-          if (r % this.wallFrequency === 0) {
+          if (r % randomWallFrequency === 0) {
             w = 1;
           }
         }
-        row.push(w);
+        wallMap.push(w);
       }
-      wallMap.push(row);
     }
-    
     return wallMap;
-  },
-  
-  drawWalls: function () {
-    for (var i = 0; i < this.walls.length; i++) {
-      var row = this.walls[i];
-      for (var j = 0; j < row.length; j++) {
-        var cell = row[j];
-        if (cell == 1) {
-          var x = this.gridSize * j;
-          var y = this.gridSize * i;
-          this.drawWall(x, y);
-        }
-      }
-    }
-  },
-  
-  drawWall: function (x, y) {
-    canvas.context.fillStyle = '#ccc';
-    canvas.context.fillRect(x, y, this.gridSize, this.gridSize);
   }
 });
 
 game.loadState('demo');
-// game.start();
-},{"../../src/game.js":4}],2:[function(require,module,exports){
+game.start();
+},{"../../src/game.js":5}],2:[function(require,module,exports){
+var Camera = function (canvas) {
+  this.canvas = canvas;
+  this.x = 0;
+  this.y = 0;
+  this.maxX = 0;
+  this.maxY = 0;
+  this.width = canvas.width;
+  this.height = canvas.height;
+  this.following = false;
+  
+  this._addEventListeners();
+};
+
+Camera.prototype.moveTo = function (x, y) {
+  this.x = x;
+  this.y = y;
+  
+  // clamp values so that they can not got outside the bounds of the world
+  this.x = Math.max(0, Math.min(this.x, this.maxX));
+  this.y = Math.max(0, Math.min(this.y, this.maxY));
+};
+
+Camera.prototype.follow = function (obj) {
+  this.following = obj;
+  this.following.screenX = 0;
+  this.following.screenY = 0;
+};
+
+Camera.prototype.update = function () {
+  // TODO: https://github.com/mozdevs/gamedev-js-tiles/blob/gh-pages/square/logic-grid.js#L76-L102
+};
+
+Camera.prototype.updateWorldBounds = function (worldWidth, worldHeight) {
+  // retain the worlds width and height so that we can reuse it if the screen is resized
+  this.worldWidth = worldWidth || this.worldWidth;
+  this.worldHeight = worldHeight || this.worldHeight;
+  
+  // if the cameras width and height are smaller than the worlds width and height
+  // allow it to move. Else keep it locked to 0,0
+  this.maxX = (this.width < this.worldWidth)? this.worldWidth - this.width : 0;
+  this.maxY = (this.height < this.worldHeight)? this.worldHeight - this.height : 0;
+  
+  // Update the current x & y vals if they are now outside the max bounds
+  if (this.x > this.maxX) {
+    this.x = this.maxX
+  }
+  if (this.y > this.maxY) {
+    this.y = this.maxY
+  }
+};
+
+// Private
+
+Camera.prototype._addEventListeners = function () {
+  var camera = this;
+  this.canvas.on('resize', function () {
+    camera.width = camera.canvas.width;
+    camera.height = camera.canvas.height;
+    camera.updateWorldBounds();
+  });
+};
+
+module.exports = Camera;
+},{}],3:[function(require,module,exports){
 var Eventer = require('./eventer.js');
 var MediaQueryManager = require('./mq_manager.js');
 
@@ -295,7 +232,7 @@ CanvasManager.prototype._setCanvasSizeToFull = function () {
 };
 
 module.exports = CanvasManager;
-},{"./eventer.js":3,"./mq_manager.js":6}],3:[function(require,module,exports){
+},{"./eventer.js":4,"./mq_manager.js":8}],4:[function(require,module,exports){
 /*
   Custom events object
   - Turns an object into one that can fire custome events: https://gist.github.com/stewartknapman/f49fa09a10bf545610cf
@@ -335,13 +272,11 @@ Eventer.prototype.trigger = function (event, args) {
 };
 
 module.exports = Eventer;
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 /*
   TODO:
-    - pause/stop on window blur
     - world vs camera/ world largr than canavs; player centered to canvas
     - collision detection
-    - rename window size manager and use height mq's as well as width ones
 */
 
 var CanvasManager = require('./canvas_manager.js');
@@ -350,8 +285,8 @@ var Loop = require('./loop.js');
 
 var Game = function (canvasSelector, scaleType) {
   this.canvas = new CanvasManager(canvasSelector, scaleType);
-  this.stateManager = new StateManager(this.canvas);
-  this.loop = new Loop(this.stateManager);
+  this.stateManager = new StateManager();
+  this.loop = new Loop(this.canvas, this.stateManager);
   
   Object.defineProperty(this, 'isRunning', {
     get: function () {
@@ -359,20 +294,19 @@ var Game = function (canvasSelector, scaleType) {
     }
   });
   
-  
   this._addEventListeners();
 };
 
 // Set up states
 Game.prototype.newState = function (stateId, stateObj) {
-  this.stateManager.addState(stateId, stateObj);
+  this.stateManager.addState(stateId, stateObj, this.canvas);
 };
 
 Game.prototype.loadState = function (stateId) {
   this.stateManager.loadState(stateId);
 };
 
-// Start and Stop(?)
+// Start and Stop Loop
 
 Game.prototype.start = function () {
   this.loop.startLoop();
@@ -392,13 +326,70 @@ Game.prototype._addEventListeners = function () {
 };
 
 module.exports = Game;
-},{"./canvas_manager.js":2,"./loop.js":5,"./state_manager.js":8}],5:[function(require,module,exports){
+},{"./canvas_manager.js":3,"./loop.js":7,"./state_manager.js":10}],6:[function(require,module,exports){
+/*
+  TODO:
+    isometric tile map: https://developer.mozilla.org/en-US/docs/Games/Techniques/Tilemaps#Isometric_tilemaps
+    render needs to overlap tiles
+*/
+
+var LayerMap = function (canvas, camera, mapID, numRows, numCols, tileWidth, tileHeight, map, sprite, tileStyle) {
+  this.canvas = canvas;
+  this.camera = camera;
+  this.id = mapID;
+  this.map = map;
+  this.sprite = sprite || false; // if no sprite is given invoke the draw tile method
+  this.tileStyle = tileStyle || 'square'; // styles: isometric or square (default)
+  
+  this.rows = numRows;
+  this.cols = numCols;
+  this.tileWidth = tileWidth; // in px
+  this.tileHeight = tileHeight; // in px
+  this.width = tileWidth * numRows;
+  this.height = tileHeight * numCols;
+};
+
+LayerMap.prototype.render = function () {
+  var startCol = Math.floor(this.camera.x / this.tileWidth);
+  var endCol = startCol + (this.camera.width / this.tileWidth);
+  var startRow = Math.floor(this.camera.y / this.tileHeight);
+  var endRow = startRow + (this.camera.height / this.tileHeight);
+  var offsetX = -this.camera.x + startCol * this.tileWidth;
+  var offsetY = -this.camera.y + startRow * this.tileHeight;
+  
+  for (var c = startCol; c <= endCol; c++) {
+    for (var r = startRow; r <= endRow; r++) {
+      var tile = this._getMapTile(c, r);
+      var x = (c - startCol) * this.tileWidth + offsetX;
+      var y = (r - startRow) * this.tileHeight + offsetY;
+      if (tile !== 0) { // 0 => empty tile
+        if (this.sprite) {
+          // TODO: https://github.com/mozdevs/gamedev-js-tiles/blob/gh-pages/square/logic-grid.js#L210-L220
+        } else {
+          this.drawTile(tile, x, y, c, r);
+        }
+      }
+    }
+  }
+};
+
+LayerMap.prototype.drawTile = function (tile, x, y) {};
+
+// Private
+
+LayerMap.prototype._getMapTile = function (col, row) {
+  return this.map[row * this.cols + col]
+};
+
+module.exports = LayerMap;
+},{}],7:[function(require,module,exports){
 var instance;
-var Loop = function (stateManager) {
+var Loop = function (canvas, stateManager) {
   if (instance) {
     return instance;
   }
   
+  this.canvas = canvas;
   this.stateManager = stateManager;
   this.currentLoop = null;
   this.isRunning = false;
@@ -414,6 +405,8 @@ Loop.prototype.main = function () {
   this.currentLoop = window.requestAnimationFrame(function () { 
     _this.main();
   });
+  
+  this.canvas.clear();
   this.stateManager.updateCurrentState();
 };
 
@@ -450,7 +443,7 @@ Loop.prototype._addEventListeners = function () {
 };
 
 module.exports = Loop;
-},{}],6:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 var Eventer = require('./eventer.js');
 var instance;
 
@@ -497,46 +490,56 @@ MediaQueryManager.prototype._removeQuotes = function (string) {
 };
 
 module.exports = MediaQueryManager;
-},{"./eventer.js":3}],7:[function(require,module,exports){
-var State = function (id, object) {
+},{"./eventer.js":4}],9:[function(require,module,exports){
+var World = require('./world.js');
+var Camera = require('./camera');
+
+var State = function (id, object, canvas) {
   this.id = id;
+  this.canvas = canvas;
+  this.camera = new Camera(canvas);
+  this.world = new World(canvas, this.camera);
+  
   this._setMethods(object);
 };
 
-State.prototype.init = function () { console.log('default init') };
-State.prototype.update = function () { console.log('default update') };
-State.prototype.destroy = function () { console.log('default destroy') };
-State.prototype.render = function () { console.log('default render') };
-State.prototype.resize = function () { console.log('default resize') };
+State.prototype.init = function () {};    // is called when the state is loaded
+State.prototype.update = function () {};  // is called during the game loop; is used for updating game logic
+State.prototype.resize = function () {};  // is called when the screen is resized
+State.prototype.destroy = function () {}; // is called when a new state is loaded
+
+// is called after init, update and resize and redraws the canvas
+State.prototype.render = function () {
+  this.camera.update();
+  this.world.render();
+};
 
 // private
 
 State.prototype._setMethods = function (object) {
   for (var method in object) {
-    if (object.hasOwnProperty(method)) {
+    if (object.hasOwnProperty(method) && method !== 'render') {
       this[method] = object[method];
     }
   }
 };
 
 module.exports = State;
-},{}],8:[function(require,module,exports){
+},{"./camera":2,"./world.js":11}],10:[function(require,module,exports){
 var State = require('./state.js');
 
-var States = function (canvas) {
-  this.canvas = canvas;
+var States = function () {
   this.states = {};
   this.currentState = null;
 };
 
-States.prototype.addState = function (stateId, stateObj) {
-  this.states[stateId] = new State(stateId, stateObj);
+States.prototype.addState = function (stateId, stateObj, canvas) {
+  this.states[stateId] = new State(stateId, stateObj, canvas);
 };
 
 States.prototype.loadState = function (stateId) {
   if (this.currentState) {
     this.currentState.destroy();
-    this.canvas.clear();
   }
   
   this.currentState = this.states[stateId];
@@ -546,15 +549,71 @@ States.prototype.loadState = function (stateId) {
 
 States.prototype.updateCurrentState = function () {
   this.currentState.update();
-  this.canvas.clear();
   this.currentState.render();
 };
 
 States.prototype.resizeCurrentState = function () {
   this.currentState.resize();
-  this.canvas.clear();
   this.currentState.render();
 };
 
 module.exports = States;
-},{"./state.js":7}]},{},[1]);
+},{"./state.js":9}],11:[function(require,module,exports){
+/*
+  World has layers
+  a layer can be of type map or type object
+  
+  A layer has a render method
+  
+  Each state has a new world
+  the state renders the world
+  this means the world is acessable from inside the state
+  
+*/
+var LayerMap = require('./layer_map.js');
+
+var World = function (canvas, camera) {
+  this.canvas = canvas;
+  this.camera = camera;
+  this.layers = [];
+  
+  this.setSize(canvas.width, canvas.height);
+};
+
+World.prototype.setSize = function (width, height) {
+  this.width = width;
+  this.height = height;
+  this.camera.updateWorldBounds(width, height);
+};
+
+World.prototype.newMapLayer = function (mapID, numRows, numCols, tileWidth, tileHeight, map, sprite, tileStyle) {
+  var layer = new LayerMap(this.canvas, this.camera, mapID, numRows, numCols, tileWidth, tileHeight, map, sprite, tileStyle);
+  this.layers.push(layer);
+  return layer;
+};
+
+World.prototype.newObjectLayer = function (worldX, worldY, width, height) {
+  // TODO
+  // needs render method where the object is drawn or sprite is added to context
+  // do we have a second method or animating?
+};
+
+World.prototype.render = function () {
+  this._eachLayer(function (layer) {
+    layer.render();
+  });
+};
+
+// Private
+
+World.prototype._eachLayer = function (callback) {
+  for (var l = 0; l < this.layers.length; l++) {
+    var layer = this.layers[l];
+    if (callback) {
+      callback.apply(this, [layer]);
+    }
+  }
+};
+
+module.exports = World;
+},{"./layer_map.js":6}]},{},[1]);
