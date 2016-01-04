@@ -11,6 +11,7 @@ game.newState('demo', {
       The World has layers, which can either be a map or an object
     */
     
+    var state = this;
     var numRows = 32,
       numCols = 32,
       tileWidth = 64,
@@ -18,12 +19,12 @@ game.newState('demo', {
       randomWallFrequency = 10;
       
     // if the worlds size is bigger than the canvas then we need to set it.
-    this.world.setSize(tileWidth * numRows, tileHeight * numCols);
+    state.world.setSize(tileWidth * numRows, tileHeight * numCols);
     
     // create a new map layer
     // randomly generate a tile map
-    var wallMap = this.buildWallMap(numRows, numCols, randomWallFrequency);
-    var walls = this.world.newMapLayer('walls', numRows, numCols, tileWidth, tileHeight, wallMap);
+    var wallMap = state.buildWallMap(numRows, numCols, randomWallFrequency);
+    var walls = state.world.newMapLayer('walls', numRows, numCols, tileWidth, tileHeight, wallMap);
     // override layerMaps drawTile method so we have something to draw as we are not using sprites
     
     walls.drawTile = function (tile, x, y, c, r) {
@@ -34,9 +35,13 @@ game.newState('demo', {
       this.canvas.context.fillText(c+':'+r, x+10, y+20);
     };
     
+    var player = state.world.newObjectLayer('bb8');
+    player.draw = function (x, y) {
+      state.drawPlayer(x, y);
+    };
+    
     // Input: move camera
     // BUG: clicking starts loop again after it has been stopped
-    var state = this;
     document.addEventListener('click', function (event) {
       // this is a bit wrong, but it proves the camera can move for the most part.
       var diffX = (state.camera.width / 2) - event.x;
@@ -76,6 +81,63 @@ game.newState('demo', {
       }
     }
     return wallMap;
+  },
+  
+  drawPlayer: function (x, y) {
+        // body
+    this.canvas.context.fillStyle = '#eee';
+    this.canvas.context.strokeStyle = '#333';
+    this.canvas.context.beginPath();
+    this.canvas.context.arc(x, y, 20, 0, 180);
+    this.canvas.context.fill();
+    this.canvas.context.stroke();
+    
+    // orange dot
+    this.canvas.context.fillStyle = '#ca601e';
+    this.canvas.context.strokeStyle = '#ca601e';
+    this.canvas.context.beginPath();
+    this.canvas.context.arc(x, y, 12, 0, 180);
+    this.canvas.context.fill();
+    this.canvas.context.stroke();
+    
+    // silver dot
+    this.canvas.context.fillStyle = '#ddd';
+    this.canvas.context.beginPath();
+    this.canvas.context.arc(x, y, 8, 0, 180);
+    this.canvas.context.fill();
+    
+    // head
+    this.canvas.context.fillStyle = '#eee';
+    this.canvas.context.strokeStyle = '#333';
+    this.canvas.context.beginPath();
+    this.canvas.context.arc(x, y - 22, 10, (Math.PI/180)*150, (Math.PI/180)*30);
+    this.canvas.context.arc(x, y - 42, 26, (Math.PI/180)*71, (Math.PI/180)*109);
+    this.canvas.context.fill();
+    this.canvas.context.stroke();
+    
+    // eyes
+    this.canvas.context.fillStyle = '#333';
+    this.canvas.context.strokeStyle = '#333';
+    this.canvas.context.beginPath();
+    this.canvas.context.arc(x, y - 25, 3, 0, 180);
+    this.canvas.context.fill();
+    this.canvas.context.stroke();
+    
+    this.canvas.context.fillStyle = '#333';
+    this.canvas.context.strokeStyle = '#333';
+    this.canvas.context.beginPath();
+    this.canvas.context.arc(x + 5, y - 21, 1, 0, 180);
+    this.canvas.context.fill();
+    this.canvas.context.stroke();
+    
+    // antenia
+    this.canvas.context.fillStyle = '#333';
+    this.canvas.context.strokeStyle = '#333';
+    this.canvas.context.beginPath();
+    this.canvas.context.moveTo(x, y - 30);
+    this.canvas.context.lineTo(x, y - 40);
+    this.canvas.context.stroke();
+    this.canvas.context.closePath();
   }
 });
 
@@ -232,7 +294,7 @@ CanvasManager.prototype._setCanvasSizeToFull = function () {
 };
 
 module.exports = CanvasManager;
-},{"./eventer.js":4,"./mq_manager.js":8}],4:[function(require,module,exports){
+},{"./eventer.js":4,"./mq_manager.js":9}],4:[function(require,module,exports){
 /*
   Custom events object
   - Turns an object into one that can fire custome events: https://gist.github.com/stewartknapman/f49fa09a10bf545610cf
@@ -326,7 +388,7 @@ Game.prototype._addEventListeners = function () {
 };
 
 module.exports = Game;
-},{"./canvas_manager.js":3,"./loop.js":7,"./state_manager.js":10}],6:[function(require,module,exports){
+},{"./canvas_manager.js":3,"./loop.js":8,"./state_manager.js":11}],6:[function(require,module,exports){
 /*
   TODO:
     isometric tile map: https://developer.mozilla.org/en-US/docs/Games/Techniques/Tilemaps#Isometric_tilemaps
@@ -383,6 +445,28 @@ LayerMap.prototype._getMapTile = function (col, row) {
 
 module.exports = LayerMap;
 },{}],7:[function(require,module,exports){
+/*
+  TODO:
+  sprite: also needs to know sprite width & height and image width & height
+  if sprite width > image width then animate sprite?
+*/
+
+var LayerObject = function (canvas, camera, objectID, x, y) {
+  this.canvas = canvas;
+  this.camera = camera;
+  this.id = objectID;
+  this.x = x || this.camera.width / 2;
+  this.y = y || this.camera.height / 2;
+};
+
+LayerObject.prototype.render = function () {
+  this.draw(this.x, this.y);
+};
+
+LayerObject.prototype.draw = function (x, y) {};
+
+module.exports = LayerObject;
+},{}],8:[function(require,module,exports){
 var instance;
 var Loop = function (canvas, stateManager) {
   if (instance) {
@@ -443,7 +527,7 @@ Loop.prototype._addEventListeners = function () {
 };
 
 module.exports = Loop;
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 var Eventer = require('./eventer.js');
 var instance;
 
@@ -490,7 +574,7 @@ MediaQueryManager.prototype._removeQuotes = function (string) {
 };
 
 module.exports = MediaQueryManager;
-},{"./eventer.js":4}],9:[function(require,module,exports){
+},{"./eventer.js":4}],10:[function(require,module,exports){
 var World = require('./world.js');
 var Camera = require('./camera');
 
@@ -525,7 +609,7 @@ State.prototype._setMethods = function (object) {
 };
 
 module.exports = State;
-},{"./camera":2,"./world.js":11}],10:[function(require,module,exports){
+},{"./camera":2,"./world.js":12}],11:[function(require,module,exports){
 var State = require('./state.js');
 
 var States = function () {
@@ -558,7 +642,7 @@ States.prototype.resizeCurrentState = function () {
 };
 
 module.exports = States;
-},{"./state.js":9}],11:[function(require,module,exports){
+},{"./state.js":10}],12:[function(require,module,exports){
 /*
   World has layers
   a layer can be of type map or type object
@@ -571,6 +655,7 @@ module.exports = States;
   
 */
 var LayerMap = require('./layer_map.js');
+var LayerObject = require('./layer_object.js');
 
 var World = function (canvas, camera) {
   this.canvas = canvas;
@@ -592,7 +677,15 @@ World.prototype.newMapLayer = function (mapID, numRows, numCols, tileWidth, tile
   return layer;
 };
 
-World.prototype.newObjectLayer = function (worldX, worldY, width, height) {
+World.prototype.newObjectLayer = function (objectID, x, y) { // worldX, worldY, width, height ???
+  var layer = new LayerObject(this.canvas, this.camera, objectID, x, y);
+  this.layers.push(layer);
+  return layer;
+  
+  
+  
+  
+  
   // TODO
   // needs render method where the object is drawn or sprite is added to context
   // do we have a second method or animating?
@@ -616,4 +709,4 @@ World.prototype._eachLayer = function (callback) {
 };
 
 module.exports = World;
-},{"./layer_map.js":6}]},{},[1]);
+},{"./layer_map.js":6,"./layer_object.js":7}]},{},[1]);

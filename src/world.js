@@ -10,6 +10,7 @@
   
 */
 var LayerMap = require('./layer_map.js');
+var LayerObject = require('./layer_object.js');
 
 var World = function (canvas, camera) {
   this.canvas = canvas;
@@ -31,7 +32,15 @@ World.prototype.newMapLayer = function (mapID, numRows, numCols, tileWidth, tile
   return layer;
 };
 
-World.prototype.newObjectLayer = function (worldX, worldY, width, height) {
+World.prototype.newObjectLayer = function (objectID, x, y) { // worldX, worldY, width, height ???
+  var layer = new LayerObject(this.canvas, this.camera, objectID, x, y);
+  this.layers.push(layer);
+  return layer;
+  
+  
+  
+  
+  
   // TODO
   // needs render method where the object is drawn or sprite is added to context
   // do we have a second method or animating?
