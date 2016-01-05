@@ -34,14 +34,26 @@ game.newState('demo', {
       this.canvas.context.fillText(c+':'+r, x+10, y+20);
     };
     
-    var player = state.world.newObjectLayer('bb8');
-    player.draw = function (x, y) {
+    // Create a new object layer for the player character
+    state.player = state.world.newObjectLayer('bb8');
+    state.player.V = 5;
+    state.player.draw = function (x, y) {
       state.drawPlayer(x, y);
     };
+    
+    state.targetX = state.player.x;
+    state.targetY = state.player.y;
+    
     
     // Input: move camera
     // BUG: clicking starts loop again after it has been stopped
     document.addEventListener('click', function (event) {
+      state.targetX = Math.round(event.x);
+      state.targetY = Math.round(event.y);
+      
+      
+      
+/*
       // this is a bit wrong, but it proves the camera can move for the most part.
       var diffX = (state.camera.width / 2) - event.x;
       var diffY = (state.camera.height / 2) - event.y;
@@ -49,13 +61,66 @@ game.newState('demo', {
       var y = state.camera.x - diffY;
       
       state.camera.moveTo(x, y);
+*/
     });
   },
   
   update: function () {
+    if (this.targetX !== this.player.x || this.targetY !== this.player.y) {
+      var diffX = this.player.x - this.targetX;
+      var diffY = this.player.y - this.targetY;      
+      var diffX_pos = (diffX < 0)? diffX * -1 : diffX;
+      var diffY_pos = (diffY < 0)? diffY * -1 : diffY;
+      
+      this.move(diffX, diffY, diffX_pos, diffY_pos, this.player.V);
+    }
+  },
+  
+  move: function (diffX, diffY, diffX_pos, diffY_pos, velocity) {
+    // move along the shortest axis until it's the same as the target
+    // then move along the remaining axis
+    
+    if (this.player.x === this.targetX || this.player.y === this.targetY) {
+      if (diffX_pos > diffY_pos) {
+        this.moveX(diffX, diffX_pos, velocity);
+      } else {
+        this.moveY(diffY, diffY_pos, velocity);
+      }
+    } else {
+      if (diffX_pos < diffY_pos) {
+        this.moveX(diffX, diffX_pos, velocity);
+      } else {
+        this.moveY(diffY, diffY_pos, velocity);
+      }
+    }
+  },
+  
+  moveX: function (diffX, diffX_pos, velocity) {
+    if (diffX_pos < velocity) velocity = diffX_pos;
+    if (diffX > 0) {
+      this.player.x -= velocity;
+    } else {
+      this.player.x += velocity;
+    }
+  },
+  
+  moveY: function (diffY, diffY_pos, velocity) {
+    if (diffY_pos < velocity) velocity = diffY_pos;
+    if (diffY > 0) {
+      this.player.y -= velocity;
+    } else {
+      this.player.y += velocity;
+    }
   },
   
   resize: function () {
+    var widthRatio = this.canvas.width / this.canvas.previousWidth;
+    var heightRatio = this.canvas.height / this.canvas.previousHeight;
+    
+    this.player.x = Math.round(this.player.x * widthRatio);
+    this.player.y = Math.round(this.player.y * heightRatio);
+    this.targetX = Math.round(this.targetX * widthRatio);
+    this.targetY = Math.round(this.targetY * heightRatio);
   },
   
   destroy: function () {
