@@ -42,31 +42,21 @@ game.newState('demo', {
       state.drawPlayer(x, y);
     };
     
+    state.camera.follow(state.player);
+    
+    state.direction = false;
     state.targetX = state.player.x;
     state.targetY = state.player.y;
     
-    
-    // Input: move camera
-    // BUG: clicking starts loop again after it has been stopped
+    // Input: move player to clicked center
     document.addEventListener('click', function (event) {
       state.targetX = Math.round(event.x);
       state.targetY = Math.round(event.y);
-      
-      
-      
-/*
-      // this is a bit wrong, but it proves the camera can move for the most part.
-      var diffX = (state.camera.width / 2) - event.x;
-      var diffY = (state.camera.height / 2) - event.y;
-      var x = state.camera.x - diffX;
-      var y = state.camera.x - diffY;
-      
-      state.camera.moveTo(x, y);
-*/
     });
   },
   
   update: function () {
+    this.direction = false;
     if (this.targetX !== this.player.x || this.targetY !== this.player.y) {
       var diffX = this.player.x - this.targetX;
       var diffY = this.player.y - this.targetY;      
@@ -79,8 +69,7 @@ game.newState('demo', {
   
   move: function (diffX, diffY, diffX_pos, diffY_pos, velocity) {
     // move along the shortest axis until it's the same as the target
-    // then move along the remaining axis
-    
+    // then move along the remaining axiss
     if (this.player.x === this.targetX || this.player.y === this.targetY) {
       if (diffX_pos > diffY_pos) {
         this.moveX(diffX, diffX_pos, velocity);
@@ -100,8 +89,10 @@ game.newState('demo', {
     if (diffX_pos < velocity) velocity = diffX_pos;
     if (diffX > 0) {
       this.player.x -= velocity;
+      this.direction = 'left';
     } else {
       this.player.x += velocity;
+      this.direction = 'right';
     }
   },
   
@@ -109,8 +100,10 @@ game.newState('demo', {
     if (diffY_pos < velocity) velocity = diffY_pos;
     if (diffY > 0) {
       this.player.y -= velocity;
+      this.direction = 'up';
     } else {
       this.player.y += velocity;
+      this.direction = 'down';
     }
   },
   
@@ -239,6 +232,33 @@ Camera.prototype.follow = function (obj) {
 
 Camera.prototype.update = function () {
   // TODO: https://github.com/mozdevs/gamedev-js-tiles/blob/gh-pages/square/logic-grid.js#L76-L102
+  
+  
+  // assume followed sprite should be placed at the center of the screen
+  // whenever possible
+  this.following.screenX = this.width / 2;
+  this.following.screenY = this.height / 2;
+
+  // make the camera follow the sprite
+  this.x = this.following.x - this.width / 2;
+  this.y = this.following.y - this.height / 2;
+  // clamp values
+  this.x = Math.max(0, Math.min(this.x, this.maxX));
+  this.y = Math.max(0, Math.min(this.y, this.maxY));
+
+  // in map corners, the sprite cannot be placed in the center of the screen
+  // and we have to change its screen coordinates
+
+  // left and right sides
+  if (this.following.x < this.width / 2 ||
+    this.following.x > this.maxX + this.width / 2) {
+    this.following.screenX = this.following.x - this.x;
+  }
+  // top and bottom sides
+  if (this.following.y < this.height / 2 ||
+    this.following.y > this.maxY + this.height / 2) {
+    this.following.screenY = this.following.y - this.y;
+  }
 };
 
 Camera.prototype.updateWorldBounds = function (worldWidth, worldHeight) {
@@ -439,8 +459,8 @@ Game.prototype.start = function () {
   this.loop.startLoop();
 };
 
-Game.prototype.stop = function () {
-  this.loop.stopLoop();
+Game.prototype.stop = function (force) {
+  this.loop.stopLoop(force);
 };
 
 // Private
@@ -522,13 +542,32 @@ var LayerObject = function (canvas, camera, objectID, x, y) {
   this.id = objectID;
   this.x = x || this.camera.width / 2;
   this.y = y || this.camera.height / 2;
+  
+  this.sprite = false; // <-- TODO
 };
 
 LayerObject.prototype.render = function () {
-  this.draw(this.x, this.y);
+  var x = this.x;
+  var y = this.y;
+  if (this._isFollowed) {
+    x = this.screenX;
+    y = this.screenY;
+  }
+  
+  if (this.sprite) {
+    // TODO
+  } else {
+    this.draw(x, y);
+  }
 };
 
 LayerObject.prototype.draw = function (x, y) {};
+
+// Private
+
+LayerObject.prototype._isFollowed = function () {
+  return this.camera.following && this.camera.following === this;
+};
 
 module.exports = LayerObject;
 },{}],8:[function(require,module,exports){
@@ -567,9 +606,15 @@ Loop.prototype.startLoop = function () {
   }
 };
 
-Loop.prototype.stopLoop = function () {
-  window.cancelAnimationFrame(this.currentLoop);
+Loop.prototype.stopLoop = function (force) {
+  var c = window.cancelAnimationFrame(this.currentLoop);
   this.isRunning = false;
+  if (force) {
+    // Stopped is stopped, don't restart if blured
+    // fixes issue when trying to stop from console and blur gets in first
+    this.blurWhileRunning = false;
+    console.log('Forced', this.blurWhileRunning);
+  }
 };
 
 // Private
@@ -584,6 +629,7 @@ Loop.prototype._addEventListeners = function () {
   });
   
   window.addEventListener('focus', function () {
+    console.log('focus', _this.blurWhileRunning);
     if (_this.blurWhileRunning) {
       _this.blurWhileRunning = false;
       _this.startLoop();

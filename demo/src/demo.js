@@ -41,31 +41,21 @@ game.newState('demo', {
       state.drawPlayer(x, y);
     };
     
+    state.camera.follow(state.player);
+    
+    state.direction = false;
     state.targetX = state.player.x;
     state.targetY = state.player.y;
     
-    
-    // Input: move camera
-    // BUG: clicking starts loop again after it has been stopped
+    // Input: move player to clicked center
     document.addEventListener('click', function (event) {
       state.targetX = Math.round(event.x);
       state.targetY = Math.round(event.y);
-      
-      
-      
-/*
-      // this is a bit wrong, but it proves the camera can move for the most part.
-      var diffX = (state.camera.width / 2) - event.x;
-      var diffY = (state.camera.height / 2) - event.y;
-      var x = state.camera.x - diffX;
-      var y = state.camera.x - diffY;
-      
-      state.camera.moveTo(x, y);
-*/
     });
   },
   
   update: function () {
+    this.direction = false;
     if (this.targetX !== this.player.x || this.targetY !== this.player.y) {
       var diffX = this.player.x - this.targetX;
       var diffY = this.player.y - this.targetY;      
@@ -78,8 +68,7 @@ game.newState('demo', {
   
   move: function (diffX, diffY, diffX_pos, diffY_pos, velocity) {
     // move along the shortest axis until it's the same as the target
-    // then move along the remaining axis
-    
+    // then move along the remaining axiss
     if (this.player.x === this.targetX || this.player.y === this.targetY) {
       if (diffX_pos > diffY_pos) {
         this.moveX(diffX, diffX_pos, velocity);
@@ -99,8 +88,10 @@ game.newState('demo', {
     if (diffX_pos < velocity) velocity = diffX_pos;
     if (diffX > 0) {
       this.player.x -= velocity;
+      this.direction = 'left';
     } else {
       this.player.x += velocity;
+      this.direction = 'right';
     }
   },
   
@@ -108,8 +99,10 @@ game.newState('demo', {
     if (diffY_pos < velocity) velocity = diffY_pos;
     if (diffY > 0) {
       this.player.y -= velocity;
+      this.direction = 'up';
     } else {
       this.player.y += velocity;
+      this.direction = 'down';
     }
   },
   

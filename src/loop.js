@@ -33,9 +33,15 @@ Loop.prototype.startLoop = function () {
   }
 };
 
-Loop.prototype.stopLoop = function () {
-  window.cancelAnimationFrame(this.currentLoop);
+Loop.prototype.stopLoop = function (force) {
+  var c = window.cancelAnimationFrame(this.currentLoop);
   this.isRunning = false;
+  if (force) {
+    // Stopped is stopped, don't restart if blured
+    // fixes issue when trying to stop from console and blur gets in first
+    this.blurWhileRunning = false;
+    console.log('Forced', this.blurWhileRunning);
+  }
 };
 
 // Private
@@ -50,6 +56,7 @@ Loop.prototype._addEventListeners = function () {
   });
   
   window.addEventListener('focus', function () {
+    console.log('focus', _this.blurWhileRunning);
     if (_this.blurWhileRunning) {
       _this.blurWhileRunning = false;
       _this.startLoop();

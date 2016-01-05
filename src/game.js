@@ -37,8 +37,8 @@ Game.prototype.start = function () {
   this.loop.startLoop();
 };
 
-Game.prototype.stop = function () {
-  this.loop.stopLoop();
+Game.prototype.stop = function (force) {
+  this.loop.stopLoop(force);
 };
 
 // Private

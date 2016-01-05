@@ -10,12 +10,31 @@ var LayerObject = function (canvas, camera, objectID, x, y) {
   this.id = objectID;
   this.x = x || this.camera.width / 2;
   this.y = y || this.camera.height / 2;
+  
+  this.sprite = false; // <-- TODO
 };
 
 LayerObject.prototype.render = function () {
-  this.draw(this.x, this.y);
+  var x = this.x;
+  var y = this.y;
+  if (this._isFollowed) {
+    x = this.screenX;
+    y = this.screenY;
+  }
+  
+  if (this.sprite) {
+    // TODO
+  } else {
+    this.draw(x, y);
+  }
 };
 
 LayerObject.prototype.draw = function (x, y) {};
+
+// Private
+
+LayerObject.prototype._isFollowed = function () {
+  return this.camera.following && this.camera.following === this;
+};
 
 module.exports = LayerObject;
