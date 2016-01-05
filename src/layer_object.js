@@ -10,8 +10,13 @@ var LayerObject = function (canvas, camera, objectID, x, y) {
   this.id = objectID;
   this.x = x || this.camera.width / 2;
   this.y = y || this.camera.height / 2;
-  
   this.sprite = false; // <-- TODO
+  
+  Object.defineProperty(this, '_isFollowed', {
+    get: function () {
+      return this.camera.following && this.camera.following === this;
+    }
+  });
 };
 
 LayerObject.prototype.render = function () {
@@ -30,11 +35,5 @@ LayerObject.prototype.render = function () {
 };
 
 LayerObject.prototype.draw = function (x, y) {};
-
-// Private
-
-LayerObject.prototype._isFollowed = function () {
-  return this.camera.following && this.camera.following === this;
-};
 
 module.exports = LayerObject;
