@@ -27,36 +27,50 @@ game.newState('demo', {
     var walls = state.world.newMapLayer('walls', numRows, numCols, tileWidth, tileHeight, wallMap);
     // override layerMaps drawTile method so we have something to draw as we are not using sprites
     
-    walls.drawTile = function (tile, x, y, c, r) {
-      this.canvas.context.fillStyle = '#ccc';
-      this.canvas.context.fillRect(x, y, tileWidth, tileHeight);
-      
-      this.canvas.context.fillStyle = '#333';
-      this.canvas.context.fillText(c+':'+r, x+10, y+20);
+    walls.drawTile = function (tile, x, y) {
+      state.drawWall(tile, x, y, tileWidth, tileHeight);
     };
     
     // Create a new object layer for the player character
-    state.player = state.world.newObjectLayer('bb8');
-    state.player.V = 5;
+    // place it in the center of the world
+    state.player = state.world.newObjectLayer('bb8', state.world.width/2, state.world.height/2);
+    state.player.V = 4;
     state.player.draw = function (x, y) {
       state.drawPlayer(x, y);
     };
     
+    // set the camera to follow the player
     state.camera.follow(state.player);
     
     state.direction = false;
+    state.newTarget = false;
     state.targetX = state.player.x;
     state.targetY = state.player.y;
     
     // Input: move player to clicked center
     document.addEventListener('click', function (event) {
-      state.targetX = Math.round(state.camera.x + event.x);
-      state.targetY = Math.round(state.camera.y + event.y);
+      state.targetX = Math.round(state.camera.x + event.pageX);
+      state.targetY = Math.round(state.camera.y + event.pageY);
+      state.newTarget = true;
+    });
+    document.addEventListener('touchstart', function (event) {
+      state.targetX = Math.round(state.camera.x + event.pageX);
+      state.targetY = Math.round(state.camera.y + event.pageY);
+      state.newTarget = true;
     });
   },
   
   update: function () {
     this.direction = false;
+    
+    // Highlight new target
+/*
+    if (this.newTarget) {
+      this.animateNewTarget(this.targetX, this.targetY);
+    }
+*/
+    
+    // Move payer to target
     if (this.targetX !== this.player.x || this.targetY !== this.player.y) {
       var diffX = this.player.x - this.targetX;
       var diffY = this.player.y - this.targetY;      
@@ -122,6 +136,13 @@ game.newState('demo', {
   
   buildWallMap: function (numRows, numCols, randomWallFrequency) {
     var wallMap = [];
+    var reserved = [
+      { x: (numRows/2) - 1, y: (numCols/2) - 1 }, // 15,15
+      { x: (numRows/2) - 1, y: numCols/2 },       // 15,16
+      { x: numRows/2, y: (numCols/2) - 1 },       // 16,15
+      { x: numRows/2, y: numCols/2 },             // 16,16
+    ];
+    
     for (var i = 0; i < numRows; i++) {
       for (var j = 0; j < numCols; j++) {
         var w = 0;
@@ -129,6 +150,8 @@ game.newState('demo', {
           w = 1; // top & bottom edge
         } else if (j === 0 || j === numCols-1) {
           w = 1; // left & right edge
+        } else if (this.isReserved(i, j, reserved)) {
+          w = 0; // reserved for spawn point so dont build walls here
         } else {
           var r = Math.round(Math.random() * 100);
           if (r % randomWallFrequency === 0) {
@@ -139,6 +162,23 @@ game.newState('demo', {
       }
     }
     return wallMap;
+  },
+  
+  isReserved: function (r, c, reserved) {
+    var isReserved = false;
+    for (var i = 0; i < reserved.length; i++) {
+      var obj = reserved[i];
+      if (obj.x === r && obj.y === c) {
+        isReserved = true;
+      }
+    }
+    return isReserved;
+  },
+  
+  drawWall: function (tile, x, y, tileWidth, tileHeight) {
+    this.canvas.context.fillStyle = '#ccc';
+    if (tile === 2) this.canvas.context.fillStyle = '#03b9e3';
+    this.canvas.context.fillRect(x, y, tileWidth, tileHeight);
   },
   
   drawPlayer: function (x, y) {
@@ -196,6 +236,10 @@ game.newState('demo', {
     this.canvas.context.lineTo(x, y - 40);
     this.canvas.context.stroke();
     this.canvas.context.closePath();
+  },
+  
+  animateNewTarget: function (x,y) {
+    
   }
 });
 
@@ -231,33 +275,32 @@ Camera.prototype.follow = function (obj) {
 };
 
 Camera.prototype.update = function () {
-  // TODO: https://github.com/mozdevs/gamedev-js-tiles/blob/gh-pages/square/logic-grid.js#L76-L102
+  if (this.following) {
+    // assume followed sprite should be placed at the center of the screen
+    // whenever possible
+    this.following.screenX = this.width / 2;
+    this.following.screenY = this.height / 2;
   
+    // make the camera follow the sprite
+    this.x = this.following.x - this.width / 2;
+    this.y = this.following.y - this.height / 2;
+    // clamp values
+    this.x = Math.max(0, Math.min(this.x, this.maxX));
+    this.y = Math.max(0, Math.min(this.y, this.maxY));
   
-  // assume followed sprite should be placed at the center of the screen
-  // whenever possible
-  this.following.screenX = this.width / 2;
-  this.following.screenY = this.height / 2;
-
-  // make the camera follow the sprite
-  this.x = this.following.x - this.width / 2;
-  this.y = this.following.y - this.height / 2;
-  // clamp values
-  this.x = Math.max(0, Math.min(this.x, this.maxX));
-  this.y = Math.max(0, Math.min(this.y, this.maxY));
-
-  // in map corners, the sprite cannot be placed in the center of the screen
-  // and we have to change its screen coordinates
-
-  // left and right sides
-  if (this.following.x < this.width / 2 ||
-    this.following.x > this.maxX + this.width / 2) {
-    this.following.screenX = this.following.x - this.x;
-  }
-  // top and bottom sides
-  if (this.following.y < this.height / 2 ||
-    this.following.y > this.maxY + this.height / 2) {
-    this.following.screenY = this.following.y - this.y;
+    // in map corners, the sprite cannot be placed in the center of the screen
+    // and we have to change its screen coordinates
+  
+    // left and right sides
+    if (this.following.x < this.width / 2 ||
+      this.following.x > this.maxX + this.width / 2) {
+      this.following.screenX = this.following.x - this.x;
+    }
+    // top and bottom sides
+    if (this.following.y < this.height / 2 ||
+      this.following.y > this.maxY + this.height / 2) {
+      this.following.screenY = this.following.y - this.y;
+    }
   }
 };
 
@@ -542,8 +585,13 @@ var LayerObject = function (canvas, camera, objectID, x, y) {
   this.id = objectID;
   this.x = x || this.camera.width / 2;
   this.y = y || this.camera.height / 2;
-  
   this.sprite = false; // <-- TODO
+  
+  Object.defineProperty(this, '_isFollowed', {
+    get: function () {
+      return this.camera.following && this.camera.following === this;
+    }
+  });
 };
 
 LayerObject.prototype.render = function () {
@@ -562,12 +610,6 @@ LayerObject.prototype.render = function () {
 };
 
 LayerObject.prototype.draw = function (x, y) {};
-
-// Private
-
-LayerObject.prototype._isFollowed = function () {
-  return this.camera.following && this.camera.following === this;
-};
 
 module.exports = LayerObject;
 },{}],8:[function(require,module,exports){
