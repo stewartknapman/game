@@ -49,8 +49,8 @@ game.newState('demo', {
     
     // Input: move player to clicked center
     document.addEventListener('click', function (event) {
-      state.targetX = Math.round(event.x);
-      state.targetY = Math.round(event.y);
+      state.targetX = Math.round(state.camera.x + event.x);
+      state.targetY = Math.round(state.camera.y + event.y);
     });
   },
   
