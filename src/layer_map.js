@@ -5,6 +5,8 @@
 */
 
 var LayerMap = function (canvas, camera, mapID, numRows, numCols, tileWidth, tileHeight, map, sprite, tileStyle) {
+  this.TYPE = 'LayerMap';
+  
   this.canvas = canvas;
   this.camera = camera;
   this.id = mapID;

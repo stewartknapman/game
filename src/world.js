@@ -8,10 +8,6 @@
   the state renders the world
   this means the world is acessable from inside the state
   
-  TODO:
-  - get layer by id
-  - get layers by type
-  
 */
 var LayerMap = require('./layer_map.js');
 var LayerObject = require('./layer_object.js');
@@ -42,13 +38,41 @@ World.prototype.newObjectLayer = function (objectID, x, y) { // worldX, worldY, 
   return layer;
 };
 
+World.prototype.update = function () {
+  this._eachOfType('LayerObject', function (layer) {
+    layer.update();
+  });
+};
+
 World.prototype.render = function () {
   this._eachLayer(function (layer) {
     layer.render();
   });
 };
 
+World.prototype.getLayerByID = function (id) {
+  var layer = false;
+  if (id) {
+    this._eachLayer(function (l) {
+      if (l.id === id) {
+        layer = l;
+      }
+    });
+  }
+  return layer;
+};
+
 // Private
+
+World.prototype._eachOfType = function (type, callback) {
+  if (type) {
+    this._eachLayer(function (layer) {
+      if (layer.TYPE === type) {
+        callback.apply(this, [layer]);
+      }
+    });
+  }
+};
 
 World.prototype._eachLayer = function (callback) {
   for (var l = 0; l < this.layers.length; l++) {

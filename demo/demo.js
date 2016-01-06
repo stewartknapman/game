@@ -545,6 +545,8 @@ module.exports = Game;
 */
 
 var LayerMap = function (canvas, camera, mapID, numRows, numCols, tileWidth, tileHeight, map, sprite, tileStyle) {
+  this.TYPE = 'LayerMap';
+  
   this.canvas = canvas;
   this.camera = camera;
   this.id = mapID;
@@ -598,9 +600,15 @@ module.exports = LayerMap;
   TODO:
   sprite: also needs to know sprite width & height and image width & height
   if sprite width > image width then animate sprite?
+  
+  behaviours: methods called at a certain point which allow objects to react to something
+  
+  
 */
 
-var LayerObject = function (canvas, camera, objectID, x, y) {
+var LayerObject = function (canvas, camera, objectID, x, y, behaviors) {
+  this.TYPE = 'LayerObject';
+  
   this.canvas = canvas;
   this.camera = camera;
   this.id = objectID;
@@ -608,11 +616,22 @@ var LayerObject = function (canvas, camera, objectID, x, y) {
   this.y = y || this.camera.height / 2;
   this.sprite = false; // <-- TODO
   
+  this.behaviors = behaviors || [];
+  
   Object.defineProperty(this, '_isFollowed', {
     get: function () {
       return this.camera.following && this.camera.following === this;
     }
   });
+};
+
+LayerObject.prototype.update = function () {
+  for (var i = 0; i < this.behaviors.length; i++) {
+    var behavior = this.behaviors[i];
+    if (behavior.execute) {
+      behavior.execute.apply(this);
+    }
+  }
 };
 
 LayerObject.prototype.render = function () {
@@ -762,9 +781,11 @@ var State = function (id, object, canvas) {
 };
 
 State.prototype.init = function () {};    // is called when the state is loaded
-State.prototype.update = function () {};  // is called during the game loop; is used for updating game logic
 State.prototype.resize = function () {};  // is called when the screen is resized
 State.prototype.destroy = function () {}; // is called when a new state is loaded
+State.prototype.update = function () {    // is called during the game loop; is used for updating game logic
+  this.world.update();
+};
 
 // is called after init, update and resize and redraws the canvas
 State.prototype.render = function () {
@@ -776,10 +797,20 @@ State.prototype.render = function () {
 
 State.prototype._setMethods = function (object) {
   for (var method in object) {
+    // don't override render method
     if (object.hasOwnProperty(method) && method !== 'render') {
-      this[method] = object[method];
+      // make sure update still calls world update
+      if (method === 'update') {
+        this.update = function () {
+          this.world.update();
+          object.update.apply(this);
+        };
+      } else {
+        this[method] = object[method];
+      }
     }
   }
+  console.log(this);
 };
 
 module.exports = State;
@@ -827,10 +858,6 @@ module.exports = States;
   the state renders the world
   this means the world is acessable from inside the state
   
-  TODO:
-  - get layer by id
-  - get layers by type
-  
 */
 var LayerMap = require('./layer_map.js');
 var LayerObject = require('./layer_object.js');
@@ -861,13 +888,41 @@ World.prototype.newObjectLayer = function (objectID, x, y) { // worldX, worldY, 
   return layer;
 };
 
+World.prototype.update = function () {
+  this._eachOfType('LayerObject', function (layer) {
+    layer.update();
+  });
+};
+
 World.prototype.render = function () {
   this._eachLayer(function (layer) {
     layer.render();
   });
 };
 
+World.prototype.getLayerByID = function (id) {
+  var layer = false;
+  if (id) {
+    this._eachLayer(function (l) {
+      if (l.id === id) {
+        layer = l;
+      }
+    });
+  }
+  return layer;
+};
+
 // Private
+
+World.prototype._eachOfType = function (type, callback) {
+  if (type) {
+    this._eachLayer(function (layer) {
+      if (layer.TYPE === type) {
+        callback.apply(this, [layer]);
+      }
+    });
+  }
+};
 
 World.prototype._eachLayer = function (callback) {
   for (var l = 0; l < this.layers.length; l++) {
