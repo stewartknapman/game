@@ -3,6 +3,7 @@ var Game = require('../../src/game.js');
 var game = new Game('#main');
 window.game = game;
 
+var state;
 game.newState('demo', {
   init: function () {
     
@@ -11,7 +12,7 @@ game.newState('demo', {
       The World has layers, which can either be a map or an object
     */
     
-    var state = this;
+    state = this;
     var numRows = 32,
       numCols = 32,
       tileWidth = 64,
@@ -24,15 +25,15 @@ game.newState('demo', {
     // create a new map layer
     // randomly generate a tile map
     var wallMap = state.buildWallMap(numRows, numCols, randomWallFrequency);
-    var walls = state.world.newMapLayer('walls', numRows, numCols, tileWidth, tileHeight, wallMap);
+    state.walls = state.world.newMapLayer('walls', numRows, numCols, tileWidth, tileHeight, wallMap);
     // override layerMaps drawTile method so we have something to draw as we are not using sprites
-    walls.drawTile = function (tile, x, y) {
+    state.walls.drawTile = function (tile, x, y) {
       state.drawWall(tile, x, y, tileWidth, tileHeight);
     };
     
     // Create a new object layer for the player character
     // place it in the center of the world
-    state.player = state.world.newObjectLayer('bb8', state.world.width/2, state.world.height/2);
+    state.player = state.world.newObjectLayer('bb8', state.world.width/2, state.world.height/2, tileWidth, tileHeight);
     state.player.V = 4;
     state.player.draw = function (x, y) {
       state.drawPlayer(x, y);
@@ -63,9 +64,22 @@ game.newState('demo', {
   },
   
   newTarget: function (event) {
-    var state = this;
-    state.target.x = Math.round(state.camera.x + event.pageX);
-    state.target.y = Math.round(state.camera.y + event.pageY);
+    // if new target collides with wall then don't set the target
+    // but still give feedback: red ripple
+    
+    var target = {
+      x: Math.round(state.camera.x + event.pageX),
+      y: Math.round(state.camera.y + event.pageY)
+    };
+    
+    if (!state.world.collides(target, state.walls)) {
+      state.target.attainable = true;
+    } else {
+      state.target.attainable = false;
+    }
+    
+    state.target.x = target.x;
+    state.target.y = target.y;
     state.target.visible = true;
     state.target.stepCount = 0;
     setTimeout(function () {
@@ -74,33 +88,34 @@ game.newState('demo', {
   },
   
   update: function () {
-    this.direction = false;
+    state.direction = false;
     
-    // Move payer to target
-    if (this.target.x !== this.player.x || this.target.y !== this.player.y) {
-      var diffX = this.player.x - this.target.x;
-      var diffY = this.player.y - this.target.y;      
+    // move payer towards target
+    if (state.target.attainable && (state.target.x !== state.player.x || state.target.y !== state.player.y)) {
+      var diffX = state.player.x - state.target.x;
+      var diffY = state.player.y - state.target.y;      
       var diffX_pos = (diffX < 0)? diffX * -1 : diffX;
       var diffY_pos = (diffY < 0)? diffY * -1 : diffY;
       
-      this.move(diffX, diffY, diffX_pos, diffY_pos, this.player.V);
+      // if !player.collides with wall
+      state.move(diffX, diffY, diffX_pos, diffY_pos, state.player.V);
     }
   },
   
   move: function (diffX, diffY, diffX_pos, diffY_pos, velocity) {
     // move along the shortest axis until it's the same as the target
     // then move along the remaining axiss
-    if (this.player.x === this.target.x || this.player.y === this.target.y) {
+    if (state.player.x === state.target.x || state.player.y === state.target.y) {
       if (diffX_pos > diffY_pos) {
-        this.moveX(diffX, diffX_pos, velocity);
+        state.moveX(diffX, diffX_pos, velocity);
       } else {
-        this.moveY(diffY, diffY_pos, velocity);
+        state.moveY(diffY, diffY_pos, velocity);
       }
     } else {
       if (diffX_pos < diffY_pos) {
-        this.moveX(diffX, diffX_pos, velocity);
+        state.moveX(diffX, diffX_pos, velocity);
       } else {
-        this.moveY(diffY, diffY_pos, velocity);
+        state.moveY(diffY, diffY_pos, velocity);
       }
     }
   },
@@ -108,22 +123,22 @@ game.newState('demo', {
   moveX: function (diffX, diffX_pos, velocity) {
     if (diffX_pos < velocity) velocity = diffX_pos;
     if (diffX > 0) {
-      this.player.x -= velocity;
-      this.direction = 'left';
+      state.player.x -= velocity;
+      state.direction = 'left';
     } else {
-      this.player.x += velocity;
-      this.direction = 'right';
+      state.player.x += velocity;
+      state.direction = 'right';
     }
   },
   
   moveY: function (diffY, diffY_pos, velocity) {
     if (diffY_pos < velocity) velocity = diffY_pos;
     if (diffY > 0) {
-      this.player.y -= velocity;
-      this.direction = 'up';
+      state.player.y -= velocity;
+      state.direction = 'up';
     } else {
-      this.player.y += velocity;
-      this.direction = 'down';
+      state.player.y += velocity;
+      state.direction = 'down';
     }
   },
   
@@ -131,13 +146,13 @@ game.newState('demo', {
     // we no longer need this because the camera centers the world on the player
     // but it is good to retain this for the method of keeping things relative to the view instead of the world
 /*
-    var widthRatio = this.canvas.width / this.canvas.previousWidth;
-    var heightRatio = this.canvas.height / this.canvas.previousHeight;
+    var widthRatio = state.canvas.width / state.canvas.previousWidth;
+    var heightRatio = state.canvas.height / state.canvas.previousHeight;
     
-    this.player.x = Math.round(this.player.x * widthRatio);
-    this.player.y = Math.round(this.player.y * heightRatio);
-    this.target.x = Math.round(this.target.x * widthRatio);
-    this.target.y = Math.round(this.target.y * heightRatio);
+    state.player.x = Math.round(state.player.x * widthRatio);
+    state.player.y = Math.round(state.player.y * heightRatio);
+    state.target.x = Math.round(state.target.x * widthRatio);
+    state.target.y = Math.round(state.target.y * heightRatio);
 */
   },
   
@@ -160,7 +175,7 @@ game.newState('demo', {
           w = 1; // top & bottom edge
         } else if (j === 0 || j === numCols-1) {
           w = 1; // left & right edge
-        } else if (this.isReserved(i, j, reserved)) {
+        } else if (state.isReserved(i, j, reserved)) {
           w = 0; // reserved for spawn point so dont build walls here
         } else {
           var r = Math.round(Math.random() * 100);
@@ -186,87 +201,93 @@ game.newState('demo', {
   },
   
   drawWall: function (tile, x, y, tileWidth, tileHeight) {
-    this.canvas.context.fillStyle = '#ccc';
-    if (tile === 2) this.canvas.context.fillStyle = '#03b9e3';
-    this.canvas.context.fillRect(x, y, tileWidth, tileHeight);
+    state.canvas.context.fillStyle = '#ccc';
+    if (tile === 2) state.canvas.context.fillStyle = '#03b9e3';
+    state.canvas.context.fillRect(x, y, tileWidth, tileHeight);
   },
   
   drawPlayer: function (x, y) {
     // body
-    this.canvas.context.fillStyle = '#eee';
-    this.canvas.context.strokeStyle = '#333';
-    this.canvas.context.beginPath();
-    this.canvas.context.arc(x, y, 20, 0, 180);
-    this.canvas.context.fill();
-    this.canvas.context.stroke();
+    state.canvas.context.fillStyle = '#eee';
+    state.canvas.context.strokeStyle = '#333';
+    state.canvas.context.beginPath();
+    state.canvas.context.arc(x, y, 20, 0, 180);
+    state.canvas.context.fill();
+    state.canvas.context.stroke();
     
     // orange dot
-    this.canvas.context.fillStyle = '#ca601e';
-    this.canvas.context.strokeStyle = '#ca601e';
-    this.canvas.context.beginPath();
-    this.canvas.context.arc(x, y, 12, 0, 180);
-    this.canvas.context.fill();
-    this.canvas.context.stroke();
+    state.canvas.context.fillStyle = '#ca601e';
+    state.canvas.context.strokeStyle = '#ca601e';
+    state.canvas.context.beginPath();
+    state.canvas.context.arc(x, y, 12, 0, 180);
+    state.canvas.context.fill();
+    state.canvas.context.stroke();
     
     // silver dot
-    this.canvas.context.fillStyle = '#ddd';
-    this.canvas.context.beginPath();
-    this.canvas.context.arc(x, y, 8, 0, 180);
-    this.canvas.context.fill();
+    state.canvas.context.fillStyle = '#ddd';
+    state.canvas.context.beginPath();
+    state.canvas.context.arc(x, y, 8, 0, 180);
+    state.canvas.context.fill();
     
     // head
-    this.canvas.context.fillStyle = '#eee';
-    this.canvas.context.strokeStyle = '#333';
-    this.canvas.context.beginPath();
-    this.canvas.context.arc(x, y - 22, 10, (Math.PI/180)*150, (Math.PI/180)*30);
-    this.canvas.context.arc(x, y - 42, 26, (Math.PI/180)*71, (Math.PI/180)*109);
-    this.canvas.context.fill();
-    this.canvas.context.stroke();
+    state.canvas.context.fillStyle = '#eee';
+    state.canvas.context.strokeStyle = '#333';
+    state.canvas.context.beginPath();
+    state.canvas.context.arc(x, y - 22, 10, (Math.PI/180)*150, (Math.PI/180)*30);
+    state.canvas.context.arc(x, y - 42, 26, (Math.PI/180)*71, (Math.PI/180)*109);
+    state.canvas.context.fill();
+    state.canvas.context.stroke();
     
     // eyes
-    this.canvas.context.fillStyle = '#333';
-    this.canvas.context.strokeStyle = '#333';
-    this.canvas.context.beginPath();
-    this.canvas.context.arc(x, y - 25, 3, 0, 180);
-    this.canvas.context.fill();
-    this.canvas.context.stroke();
+    state.canvas.context.fillStyle = '#333';
+    state.canvas.context.strokeStyle = '#333';
+    state.canvas.context.beginPath();
+    state.canvas.context.arc(x, y - 25, 3, 0, 180);
+    state.canvas.context.fill();
+    state.canvas.context.stroke();
     
-    this.canvas.context.fillStyle = '#333';
-    this.canvas.context.strokeStyle = '#333';
-    this.canvas.context.beginPath();
-    this.canvas.context.arc(x + 5, y - 21, 1, 0, 180);
-    this.canvas.context.fill();
-    this.canvas.context.stroke();
+    state.canvas.context.fillStyle = '#333';
+    state.canvas.context.strokeStyle = '#333';
+    state.canvas.context.beginPath();
+    state.canvas.context.arc(x + 5, y - 21, 1, 0, 180);
+    state.canvas.context.fill();
+    state.canvas.context.stroke();
     
     // antenia
-    this.canvas.context.fillStyle = '#333';
-    this.canvas.context.strokeStyle = '#333';
-    this.canvas.context.beginPath();
-    this.canvas.context.moveTo(x, y - 30);
-    this.canvas.context.lineTo(x, y - 40);
-    this.canvas.context.stroke();
-    this.canvas.context.closePath();
+    state.canvas.context.fillStyle = '#333';
+    state.canvas.context.strokeStyle = '#333';
+    state.canvas.context.beginPath();
+    state.canvas.context.moveTo(x, y - 30);
+    state.canvas.context.lineTo(x, y - 40);
+    state.canvas.context.stroke();
+    state.canvas.context.closePath();
   },
   
   drawTarget: function (x, y) {
-    if (this.target.visible) {
-      this.target.stepCount++;
-      var o = (1-((this.target.step * this.target.stepCount)/20)).toFixed(2);
+    if (state.target.visible) {
+      state.target.stepCount++;
+      var o = (1-((state.target.step * state.target.stepCount)/20)).toFixed(2);
       o = Number(o);
-      this.canvas.context.strokeStyle = 'rgba(3, 185, 227, '+o+')'; //'#03b9e3';
-      this.canvas.context.lineWidth = 2;
-      this.canvas.context.beginPath();
-      this.canvas.context.arc(x, y, (this.target.step * this.target.stepCount), 0, 180);
-      this.canvas.context.stroke();
-      this.canvas.context.closePath();
-      this.canvas.context.lineWidth = 1;
+      
+      if (state.target.attainable) {
+        state.canvas.context.strokeStyle = 'rgba(3, 185, 227, '+o+')'; //'#03b9e3';
+      } else {
+        state.canvas.context.strokeStyle = 'rgba(243, 58, 58, '+o+')'; //'#f33a3a'; red
+      }
+      
+      state.canvas.context.lineWidth = 2;
+      state.canvas.context.beginPath();
+      state.canvas.context.arc(x, y, (state.target.step * state.target.stepCount), 0, 180);
+      state.canvas.context.stroke();
+      state.canvas.context.closePath();
+      state.canvas.context.lineWidth = 1;
     }
   }
 });
 
 game.loadState('demo');
 game.start();
-},{"../../src/game.js":5}],2:[function(require,module,exports){
+},{"../../src/game.js":6}],2:[function(require,module,exports){
 var Camera = function (canvas) {
   this.canvas = canvas;
   this.x = 0;
@@ -443,7 +464,58 @@ CanvasManager.prototype._setCanvasSizeToFull = function () {
 };
 
 module.exports = CanvasManager;
-},{"./eventer.js":4,"./mq_manager.js":9}],4:[function(require,module,exports){
+},{"./eventer.js":5,"./mq_manager.js":10}],4:[function(require,module,exports){
+/*
+  
+  A colliding object should have a flag that says weather it is collidable
+  this allows things to be passed through if need be.
+  
+  A collider will have a master object that is always checked
+  and a set of collidable objects which the master is checked against
+  
+  The test for colliding may differ between layerMap vs layerObject and layerObject vs layerObject?
+  There is no (foreseeable) case to check layerMap vs layerMap
+  
+  an item can collide agains the worlds bounds
+  
+  A collider has a shape with a width and height which acts as the bounds to check against when detecing collisions
+  
+*/
+
+var Collider = function (canvas) {
+  this.canvas = canvas;
+};
+
+// at the very least an object needs to have x,y,width,height
+Collider.prototype.collides = function (primaryCollider, secondaryCollider) {
+//   console.log(primaryCollider, secondaryCollider);
+  if (secondaryCollider.TYPE && secondaryCollider.TYPE === 'LayerMap') {
+    // Detect 1 object against a map
+    return this.collidesWithMap(primaryCollider, secondaryCollider);
+  } else {
+    // Detect against 2 objects
+    return this.collidesWithObject(primaryCollider, secondaryCollider);
+  }
+};
+
+Collider.prototype.collidesWithMap = function (primaryObject, map) {
+  // get the tile at the x & y of the primaryObject
+  // if it is solid (> 0) then we have a collision
+  var col = Math.floor(primaryObject.x / map.tileWidth);
+  var row = Math.floor(primaryObject.y / map.tileWidth);
+  var tile = map.getMapTile(col, row);
+  return tile > 0;
+};
+
+Collider.prototype.collidesWithObject = function (primaryObject, secondaryObject) {
+};
+
+Collider.prototype.collidesWithWorldBounds = function (primaryObject, world) {
+  // TODO detect against world bounds
+};
+
+module.exports = Collider;
+},{}],5:[function(require,module,exports){
 /*
   Custom events object
   - Turns an object into one that can fire custome events: https://gist.github.com/stewartknapman/f49fa09a10bf545610cf
@@ -483,7 +555,7 @@ Eventer.prototype.trigger = function (event, args) {
 };
 
 module.exports = Eventer;
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 /*
   TODO:
     - world vs camera/ world largr than canavs; player centered to canvas
@@ -537,7 +609,7 @@ Game.prototype._addEventListeners = function () {
 };
 
 module.exports = Game;
-},{"./canvas_manager.js":3,"./loop.js":8,"./state_manager.js":11}],6:[function(require,module,exports){
+},{"./canvas_manager.js":3,"./loop.js":9,"./state_manager.js":12}],7:[function(require,module,exports){
 /*
   TODO:
     isometric tile map: https://developer.mozilla.org/en-US/docs/Games/Techniques/Tilemaps#Isometric_tilemaps
@@ -572,7 +644,7 @@ LayerMap.prototype.render = function () {
   
   for (var c = startCol; c <= endCol; c++) {
     for (var r = startRow; r <= endRow; r++) {
-      var tile = this._getMapTile(c, r);
+      var tile = this.getMapTile(c, r);
       var x = (c - startCol) * this.tileWidth + offsetX;
       var y = (r - startRow) * this.tileHeight + offsetY;
       if (tile !== 0) { // 0 => empty tile
@@ -588,14 +660,12 @@ LayerMap.prototype.render = function () {
 
 LayerMap.prototype.drawTile = function (tile, x, y) {};
 
-// Private
-
-LayerMap.prototype._getMapTile = function (col, row) {
+LayerMap.prototype.getMapTile = function (col, row) {
   return this.map[row * this.cols + col]
 };
 
 module.exports = LayerMap;
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 /*
   TODO:
   sprite: also needs to know sprite width & height and image width & height
@@ -603,10 +673,13 @@ module.exports = LayerMap;
   
   behaviours: methods called at a certain point which allow objects to react to something
   
+  collisionWidth & collisionHeight are used for collision detection and default to the base width & height
+  but can be altered indipendantly through changing the property
   
+  The base width & height are used with the sprite
 */
 
-var LayerObject = function (canvas, camera, objectID, x, y, behaviors) {
+var LayerObject = function (canvas, camera, objectID, x, y, width, height, sprite, behaviors) {
   this.TYPE = 'LayerObject';
   
   this.canvas = canvas;
@@ -614,7 +687,12 @@ var LayerObject = function (canvas, camera, objectID, x, y, behaviors) {
   this.id = objectID;
   this.x = x || this.camera.width / 2;
   this.y = y || this.camera.height / 2;
-  this.sprite = false; // <-- TODO
+  this.width = width || 1;
+  this.height = height || 1;
+  this.collisionWidth = this.width;
+  this.collisionHeight = this.height;
+  
+  this.sprite = sprite || false; // <-- TODO
   
   this.behaviors = behaviors || [];
   
@@ -653,7 +731,7 @@ LayerObject.prototype.render = function () {
 LayerObject.prototype.draw = function (x, y) {};
 
 module.exports = LayerObject;
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 var instance;
 var Loop = function (canvas, stateManager) {
   if (instance) {
@@ -720,7 +798,7 @@ Loop.prototype._addEventListeners = function () {
 };
 
 module.exports = Loop;
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 var Eventer = require('./eventer.js');
 var instance;
 
@@ -767,7 +845,7 @@ MediaQueryManager.prototype._removeQuotes = function (string) {
 };
 
 module.exports = MediaQueryManager;
-},{"./eventer.js":4}],10:[function(require,module,exports){
+},{"./eventer.js":5}],11:[function(require,module,exports){
 var World = require('./world.js');
 var Camera = require('./camera');
 
@@ -813,7 +891,7 @@ State.prototype._setMethods = function (object) {
 };
 
 module.exports = State;
-},{"./camera":2,"./world.js":12}],11:[function(require,module,exports){
+},{"./camera":2,"./world.js":13}],12:[function(require,module,exports){
 var State = require('./state.js');
 
 var States = function () {
@@ -846,7 +924,7 @@ States.prototype.resizeCurrentState = function () {
 };
 
 module.exports = States;
-},{"./state.js":10}],12:[function(require,module,exports){
+},{"./state.js":11}],13:[function(require,module,exports){
 /*
   World has layers
   a layer can be of type map or type object
@@ -860,14 +938,18 @@ module.exports = States;
 */
 var LayerMap = require('./layer_map.js');
 var LayerObject = require('./layer_object.js');
+var Collider = require('./collider.js');
 
 var World = function (canvas, camera) {
   this.canvas = canvas;
   this.camera = camera;
   this.layers = [];
+  this.collider = new Collider(canvas);
   
   this.setSize(canvas.width, canvas.height);
 };
+
+// Setup/Init methods
 
 World.prototype.setSize = function (width, height) {
   this.width = width;
@@ -881,11 +963,13 @@ World.prototype.newMapLayer = function (mapID, numRows, numCols, tileWidth, tile
   return layer;
 };
 
-World.prototype.newObjectLayer = function (objectID, x, y) { // worldX, worldY, width, height ???
-  var layer = new LayerObject(this.canvas, this.camera, objectID, x, y);
+World.prototype.newObjectLayer = function (objectID, x, y, width, height, sprite, behaviors) {
+  var layer = new LayerObject(this.canvas, this.camera, objectID, x, y, width, height, sprite, behaviors);
   this.layers.push(layer);
   return layer;
 };
+
+// Loop Methods
 
 World.prototype.update = function () {
   this._eachOfType('LayerObject', function (layer) {
@@ -897,6 +981,17 @@ World.prototype.render = function () {
   this._eachLayer(function (layer) {
     layer.render();
   });
+};
+
+// Misc
+
+World.prototype.collides = function (primaryColliderObject, secondaryColliderObject) {
+  // if no secondary collision object then check against the bounds of the world
+  if (secondaryColliderObject) {
+    return this.collider.collides(primaryColliderObject, secondaryColliderObject);
+  } else {
+    return this.collider.collidesWithWorldBounds(primaryColliderObject, this);
+  }
 };
 
 World.prototype.getLayerByID = function (id) {
@@ -933,4 +1028,4 @@ World.prototype._eachLayer = function (callback) {
 };
 
 module.exports = World;
-},{"./layer_map.js":6,"./layer_object.js":7}]},{},[1]);
+},{"./collider.js":4,"./layer_map.js":7,"./layer_object.js":8}]},{},[1]);

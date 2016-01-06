@@ -11,14 +11,18 @@
 */
 var LayerMap = require('./layer_map.js');
 var LayerObject = require('./layer_object.js');
+var Collider = require('./collider.js');
 
 var World = function (canvas, camera) {
   this.canvas = canvas;
   this.camera = camera;
   this.layers = [];
+  this.collider = new Collider(canvas);
   
   this.setSize(canvas.width, canvas.height);
 };
+
+// Setup/Init methods
 
 World.prototype.setSize = function (width, height) {
   this.width = width;
@@ -32,11 +36,13 @@ World.prototype.newMapLayer = function (mapID, numRows, numCols, tileWidth, tile
   return layer;
 };
 
-World.prototype.newObjectLayer = function (objectID, x, y) { // worldX, worldY, width, height ???
-  var layer = new LayerObject(this.canvas, this.camera, objectID, x, y);
+World.prototype.newObjectLayer = function (objectID, x, y, width, height, sprite, behaviors) {
+  var layer = new LayerObject(this.canvas, this.camera, objectID, x, y, width, height, sprite, behaviors);
   this.layers.push(layer);
   return layer;
 };
+
+// Loop Methods
 
 World.prototype.update = function () {
   this._eachOfType('LayerObject', function (layer) {
@@ -48,6 +54,17 @@ World.prototype.render = function () {
   this._eachLayer(function (layer) {
     layer.render();
   });
+};
+
+// Misc
+
+World.prototype.collides = function (primaryColliderObject, secondaryColliderObject) {
+  // if no secondary collision object then check against the bounds of the world
+  if (secondaryColliderObject) {
+    return this.collider.collides(primaryColliderObject, secondaryColliderObject);
+  } else {
+    return this.collider.collidesWithWorldBounds(primaryColliderObject, this);
+  }
 };
 
 World.prototype.getLayerByID = function (id) {

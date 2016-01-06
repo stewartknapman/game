@@ -32,7 +32,7 @@ LayerMap.prototype.render = function () {
   
   for (var c = startCol; c <= endCol; c++) {
     for (var r = startRow; r <= endRow; r++) {
-      var tile = this._getMapTile(c, r);
+      var tile = this.getMapTile(c, r);
       var x = (c - startCol) * this.tileWidth + offsetX;
       var y = (r - startRow) * this.tileHeight + offsetY;
       if (tile !== 0) { // 0 => empty tile
@@ -48,9 +48,7 @@ LayerMap.prototype.render = function () {
 
 LayerMap.prototype.drawTile = function (tile, x, y) {};
 
-// Private
-
-LayerMap.prototype._getMapTile = function (col, row) {
+LayerMap.prototype.getMapTile = function (col, row) {
   return this.map[row * this.cols + col]
 };
 
