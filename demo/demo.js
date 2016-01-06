@@ -810,7 +810,6 @@ State.prototype._setMethods = function (object) {
       }
     }
   }
-  console.log(this);
 };
 
 module.exports = State;
