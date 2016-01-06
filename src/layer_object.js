@@ -20,8 +20,9 @@ var LayerObject = function (canvas, camera, objectID, x, y) {
 };
 
 LayerObject.prototype.render = function () {
-  var x = this.x;
-  var y = this.y;
+  // x & y offset by camera
+  var x = -this.camera.x + this.x;
+  var y = -this.camera.y + this.y;
   if (this._isFollowed) {
     x = this.screenX;
     y = this.screenY;

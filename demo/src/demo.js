@@ -25,7 +25,6 @@ game.newState('demo', {
     var wallMap = state.buildWallMap(numRows, numCols, randomWallFrequency);
     var walls = state.world.newMapLayer('walls', numRows, numCols, tileWidth, tileHeight, wallMap);
     // override layerMaps drawTile method so we have something to draw as we are not using sprites
-    
     walls.drawTile = function (tile, x, y) {
       state.drawWall(tile, x, y, tileWidth, tileHeight);
     };
@@ -37,42 +36,49 @@ game.newState('demo', {
     state.player.draw = function (x, y) {
       state.drawPlayer(x, y);
     };
-    
     // set the camera to follow the player
     state.camera.follow(state.player);
     
-    state.direction = false;
-    state.newTarget = false;
-    state.targetX = state.player.x;
-    state.targetY = state.player.y;
+    // Create a new target object
+    state.target = state.world.newObjectLayer('target', state.player.x, state.player.y);
+    // Target highlight: circle grows and fades
+    // time is 0.5sec, but needs to grow from 0 to 20px in that time
+    // hence the 0.666 and the /20
+    state.target.visible = false;
+    state.target.step = 0.666;
+    state.target.stepCount = 0;
+    state.target.draw = function (x, y) {
+      state.drawTarget(x, y);
+    };
     
-    // Input: move player to clicked center
+    // Input: move player to clicked/touched center
+    state.direction = false;
     document.addEventListener('click', function (event) {
-      state.targetX = Math.round(state.camera.x + event.pageX);
-      state.targetY = Math.round(state.camera.y + event.pageY);
-      state.newTarget = true;
+      state.newTarget(event);
     });
     document.addEventListener('touchstart', function (event) {
-      state.targetX = Math.round(state.camera.x + event.pageX);
-      state.targetY = Math.round(state.camera.y + event.pageY);
-      state.newTarget = true;
+      state.newTarget(event);
     });
+  },
+  
+  newTarget: function (event) {
+    var state = this;
+    state.target.x = Math.round(state.camera.x + event.pageX);
+    state.target.y = Math.round(state.camera.y + event.pageY);
+    state.target.visible = true;
+    state.target.stepCount = 0;
+    setTimeout(function () {
+      state.target.visible = false;
+    }, 500);
   },
   
   update: function () {
     this.direction = false;
     
-    // Highlight new target
-/*
-    if (this.newTarget) {
-      this.animateNewTarget(this.targetX, this.targetY);
-    }
-*/
-    
     // Move payer to target
-    if (this.targetX !== this.player.x || this.targetY !== this.player.y) {
-      var diffX = this.player.x - this.targetX;
-      var diffY = this.player.y - this.targetY;      
+    if (this.target.x !== this.player.x || this.target.y !== this.player.y) {
+      var diffX = this.player.x - this.target.x;
+      var diffY = this.player.y - this.target.y;      
       var diffX_pos = (diffX < 0)? diffX * -1 : diffX;
       var diffY_pos = (diffY < 0)? diffY * -1 : diffY;
       
@@ -83,7 +89,7 @@ game.newState('demo', {
   move: function (diffX, diffY, diffX_pos, diffY_pos, velocity) {
     // move along the shortest axis until it's the same as the target
     // then move along the remaining axiss
-    if (this.player.x === this.targetX || this.player.y === this.targetY) {
+    if (this.player.x === this.target.x || this.player.y === this.target.y) {
       if (diffX_pos > diffY_pos) {
         this.moveX(diffX, diffX_pos, velocity);
       } else {
@@ -121,13 +127,17 @@ game.newState('demo', {
   },
   
   resize: function () {
+    // we no longer need this because the camera centers the world on the player
+    // but it is good to retain this for the method of keeping things relative to the view instead of the world
+/*
     var widthRatio = this.canvas.width / this.canvas.previousWidth;
     var heightRatio = this.canvas.height / this.canvas.previousHeight;
     
     this.player.x = Math.round(this.player.x * widthRatio);
     this.player.y = Math.round(this.player.y * heightRatio);
-    this.targetX = Math.round(this.targetX * widthRatio);
-    this.targetY = Math.round(this.targetY * heightRatio);
+    this.target.x = Math.round(this.target.x * widthRatio);
+    this.target.y = Math.round(this.target.y * heightRatio);
+*/
   },
   
   destroy: function () {
@@ -181,7 +191,7 @@ game.newState('demo', {
   },
   
   drawPlayer: function (x, y) {
-        // body
+    // body
     this.canvas.context.fillStyle = '#eee';
     this.canvas.context.strokeStyle = '#333';
     this.canvas.context.beginPath();
@@ -237,8 +247,19 @@ game.newState('demo', {
     this.canvas.context.closePath();
   },
   
-  animateNewTarget: function (x,y) {
-    
+  drawTarget: function (x, y) {
+    if (this.target.visible) {
+      this.target.stepCount++;
+      var o = (1-((this.target.step * this.target.stepCount)/20)).toFixed(2);
+      o = Number(o);
+      this.canvas.context.strokeStyle = 'rgba(3, 185, 227, '+o+')'; //'#03b9e3';
+      this.canvas.context.lineWidth = 2;
+      this.canvas.context.beginPath();
+      this.canvas.context.arc(x, y, (this.target.step * this.target.stepCount), 0, 180);
+      this.canvas.context.stroke();
+      this.canvas.context.closePath();
+      this.canvas.context.lineWidth = 1;
+    }
   }
 });
 

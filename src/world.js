@@ -8,6 +8,10 @@
   the state renders the world
   this means the world is acessable from inside the state
   
+  TODO:
+  - get layer by id
+  - get layers by type
+  
 */
 var LayerMap = require('./layer_map.js');
 var LayerObject = require('./layer_object.js');
