@@ -28,9 +28,8 @@ game.newState('demo', {
     // override layerMaps drawTile method so we have something to draw as we are not using sprites
     state.walls.drawTile = function (tile, x, y, r, c) {
       state.drawWall(tile, x, y, tileWidth, tileHeight);
-      
-      state.canvas.context.fillStyle = '#333';
-      state.canvas.context.fillText(r+':'+c, x+10, y+20);
+//       state.canvas.context.fillStyle = '#333';
+//       state.canvas.context.fillText(r+':'+c, x+10, y+20);
     };
     
     // Create a new object layer for the player character
@@ -38,9 +37,8 @@ game.newState('demo', {
     state.player = state.world.newObjectLayer('bb8', state.world.width/2, state.world.height/2, tileWidth, tileHeight);
     state.player.V = 4;
     state.player.draw = function (x, y) {
-      state.canvas.context.fillStyle = '#eee';
-      state.canvas.context.fillRect(x - (42/2), y - (56/2), 42, 56);
-      
+//       state.canvas.context.fillStyle = '#eee';
+//       state.canvas.context.fillRect(x - (42/2), y - (56/2), 42, 56);      
       state.drawPlayer(x, y);
     };
     // set the camera to follow the player
@@ -71,24 +69,15 @@ game.newState('demo', {
   newTarget: function (event) {
     // if new target collides with wall then don't set the target
     // but still give feedback: red ripple
-    
     state.target.x = Math.round(state.camera.x + event.pageX);
     state.target.y = Math.round(state.camera.y + event.pageY);
     
     var target = {
-      x: state.target.x - (42/2),
-      y: state.target.y - (50/2),
+      x: state.target.x - 32, // offset x by half a title
+      y: state.target.y - 32, // offset y by half a title
       width: 42,
       height: 50
     };
-/*
-    var target = {
-      x: state.target.x - (64/2), //(42/2),
-      y: state.target.y - (64/2), //(56/2),
-      width: 64, //42,
-      height: 64 //56
-    };
-*/
     
     if (!state.world.collides(target, state.walls)) {
       state.target.attainable = true;

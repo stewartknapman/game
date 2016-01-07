@@ -42,20 +42,15 @@ Collider.prototype.collidesWithMap = function (primaryObject, map) {
   var endCol = Math.round(startCol + (primaryObjectWidth / map.tileWidth));
   var startRow = Math.floor(primaryObject.y / map.tileWidth);
   var endRow = Math.round(startRow + (primaryObjectHeight / map.tileHeight));
-  
-  console.log(startCol, endCol, startRow, endRow);
-  console.log('---');
-  
+
   for (var c = startCol; c <= endCol; c++) {
     for (var r = startRow; r <= endRow; r++) {
       var tile = map.getMapTile(c, r);
-      console.log(c, r, tile);
       if (tile > 0) {
         collision = true;
       }
     }
   }
-  console.log('===');
   return collision;
 };
 
