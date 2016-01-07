@@ -27,8 +27,11 @@ game.newState('demo', {
     var wallMap = state.buildWallMap(numRows, numCols, randomWallFrequency);
     state.walls = state.world.newMapLayer('walls', numRows, numCols, tileWidth, tileHeight, wallMap);
     // override layerMaps drawTile method so we have something to draw as we are not using sprites
-    state.walls.drawTile = function (tile, x, y) {
+    state.walls.drawTile = function (tile, x, y, r, c) {
       state.drawWall(tile, x, y, tileWidth, tileHeight);
+      
+      state.canvas.context.fillStyle = '#333';
+      state.canvas.context.fillText(r+':'+c, x+10, y+20);
     };
     
     // Create a new object layer for the player character
@@ -36,6 +39,9 @@ game.newState('demo', {
     state.player = state.world.newObjectLayer('bb8', state.world.width/2, state.world.height/2, tileWidth, tileHeight);
     state.player.V = 4;
     state.player.draw = function (x, y) {
+      state.canvas.context.fillStyle = '#eee';
+      state.canvas.context.fillRect(x - (42/2), y - (56/2), 42, 56);
+      
       state.drawPlayer(x, y);
     };
     // set the camera to follow the player
@@ -67,19 +73,29 @@ game.newState('demo', {
     // if new target collides with wall then don't set the target
     // but still give feedback: red ripple
     
+    state.target.x = Math.round(state.camera.x + event.pageX);
+    state.target.y = Math.round(state.camera.y + event.pageY);
+    
     var target = {
-      x: Math.round(state.camera.x + event.pageX),
-      y: Math.round(state.camera.y + event.pageY)
+      x: state.target.x - (42/2),
+      y: state.target.y - (50/2),
+      width: 42,
+      height: 50
     };
+/*
+    var target = {
+      x: state.target.x - (64/2), //(42/2),
+      y: state.target.y - (64/2), //(56/2),
+      width: 64, //42,
+      height: 64 //56
+    };
+*/
     
     if (!state.world.collides(target, state.walls)) {
       state.target.attainable = true;
     } else {
       state.target.attainable = false;
     }
-    
-    state.target.x = target.x;
-    state.target.y = target.y;
     state.target.visible = true;
     state.target.stepCount = 0;
     setTimeout(function () {
@@ -499,12 +515,31 @@ Collider.prototype.collides = function (primaryCollider, secondaryCollider) {
 };
 
 Collider.prototype.collidesWithMap = function (primaryObject, map) {
-  // get the tile at the x & y of the primaryObject
-  // if it is solid (> 0) then we have a collision
-  var col = Math.floor(primaryObject.x / map.tileWidth);
-  var row = Math.floor(primaryObject.y / map.tileWidth);
-  var tile = map.getMapTile(col, row);
-  return tile > 0;
+  // get the tiles that the primaryObject covers, startug at the x & y
+  // if any tile is solid (> 0) then we have a collision
+  var collision = false;
+  var primaryObjectWidth = primaryObject.collisionWidth || primaryObject.width || map.tileWidth;
+  var primaryObjectHeight = primaryObject.collisionHeight || primaryObject.height || map.tileHeight;
+  
+  var startCol = Math.floor(primaryObject.x / map.tileWidth);
+  var endCol = Math.round(startCol + (primaryObjectWidth / map.tileWidth));
+  var startRow = Math.floor(primaryObject.y / map.tileWidth);
+  var endRow = Math.round(startRow + (primaryObjectHeight / map.tileHeight));
+  
+  console.log(startCol, endCol, startRow, endRow);
+  console.log('---');
+  
+  for (var c = startCol; c <= endCol; c++) {
+    for (var r = startRow; r <= endRow; r++) {
+      var tile = map.getMapTile(c, r);
+      console.log(c, r, tile);
+      if (tile > 0) {
+        collision = true;
+      }
+    }
+  }
+  console.log('===');
+  return collision;
 };
 
 Collider.prototype.collidesWithObject = function (primaryObject, secondaryObject) {

@@ -32,12 +32,31 @@ Collider.prototype.collides = function (primaryCollider, secondaryCollider) {
 };
 
 Collider.prototype.collidesWithMap = function (primaryObject, map) {
-  // get the tile at the x & y of the primaryObject
-  // if it is solid (> 0) then we have a collision
-  var col = Math.floor(primaryObject.x / map.tileWidth);
-  var row = Math.floor(primaryObject.y / map.tileWidth);
-  var tile = map.getMapTile(col, row);
-  return tile > 0;
+  // get the tiles that the primaryObject covers, startug at the x & y
+  // if any tile is solid (> 0) then we have a collision
+  var collision = false;
+  var primaryObjectWidth = primaryObject.collisionWidth || primaryObject.width || map.tileWidth;
+  var primaryObjectHeight = primaryObject.collisionHeight || primaryObject.height || map.tileHeight;
+  
+  var startCol = Math.floor(primaryObject.x / map.tileWidth);
+  var endCol = Math.round(startCol + (primaryObjectWidth / map.tileWidth));
+  var startRow = Math.floor(primaryObject.y / map.tileWidth);
+  var endRow = Math.round(startRow + (primaryObjectHeight / map.tileHeight));
+  
+  console.log(startCol, endCol, startRow, endRow);
+  console.log('---');
+  
+  for (var c = startCol; c <= endCol; c++) {
+    for (var r = startRow; r <= endRow; r++) {
+      var tile = map.getMapTile(c, r);
+      console.log(c, r, tile);
+      if (tile > 0) {
+        collision = true;
+      }
+    }
+  }
+  console.log('===');
+  return collision;
 };
 
 Collider.prototype.collidesWithObject = function (primaryObject, secondaryObject) {
