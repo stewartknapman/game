@@ -58,7 +58,7 @@ game.newState('demo', {
     };
     
     // Input: move player to clicked/touched center
-    state.direction = false;
+    state.currentDirection = false;
     document.addEventListener('click', function (event) {
       state.newTarget(event);
     });
@@ -93,8 +93,56 @@ game.newState('demo', {
   },
   
   update: function () {
-    state.direction = false;
-    // move payer towards target
+    // if we have a target that is different to our players x & y
+    // and we can reach it
+    // move the player towards target
+    if (state.target.attainable && (state.target.x !== state.player.x || state.target.y !== state.player.y)) {
+      // get the difference between the player and the target
+      var diffX = state.player.x - state.target.x;
+      var diffY = state.player.y - state.target.y;    
+      // make diffs positive for easier calcs  
+      var diffX_pos = (diffX < 0)? diffX * -1 : diffX;
+      var diffY_pos = (diffY < 0)? diffY * -1 : diffY;
+      
+      // make sure we have a heading, if we don't then get one
+      state.currentDirection = state.currentDirection || state.getDirection(diffX, diffY, diffX_pos, diffY_pos);
+      
+      // actually move
+      var velocity = state.player.V;
+      switch (state.currentDirection) {
+        case 'up':
+          if (diffY_pos < velocity) velocity = diffY_pos;
+          state.player.y -= velocity;
+          break;
+        case 'down':
+          if (diffY_pos < velocity) velocity = diffY_pos;
+          state.player.y += velocity;
+          break;
+        case 'left':
+          if (diffX_pos < velocity) velocity = diffX_pos;
+          state.player.x -= velocity;
+          break;
+        case 'right':
+          if (diffX_pos < velocity) velocity = diffX_pos;
+          state.player.x += velocity;
+          break;
+      }
+      
+      // check if we have a collision for next time round
+      // if we do then change direction
+      state.checkPath(velocity);
+      state.lastDirection = state.currentDirection;
+    } else {
+      state.currentDirection = false;
+    }
+    
+    
+    
+    
+    
+    
+    
+    
 /*
     if (state.target.attainable && (state.target.x !== state.player.x || state.target.y !== state.player.y)) {
       var diffX = state.player.x - state.target.x;
@@ -124,6 +172,86 @@ game.newState('demo', {
 */
   },
   
+  getDirection: function (diffX, diffY, diffX_pos, diffY_pos) {
+    var direction;
+    // move along the shortest axis until it's the same as the target
+    // then move along the remaining axiss
+    if (state.player.x === state.target.x || state.player.y === state.target.y) {
+      if (diffX_pos > diffY_pos) {
+        if (diffX > 0) {
+          direction = 'left';
+        } else {
+          direction = 'right';
+        }
+      } else {
+        if (diffY > 0) {
+          direction = 'up';
+        } else {
+          direction = 'down';
+        }
+      }
+    } else {
+      if (diffX_pos < diffY_pos) {
+        if (diffX > 0) {
+          direction = 'left';
+        } else {
+          direction = 'right';
+        }
+      } else {
+        if (diffY > 0) {
+          direction = 'up';
+        } else {
+          direction = 'down';
+        }
+      }
+    }
+    return direction;
+  },
+  
+  checkPath: function (velocity) {
+    var target = {
+      width: 32,
+      height: 32
+    };
+    switch (state.lastDirection) {
+      case 'up':
+        target.x = state.player.x - 32;
+        target.y = (state.player.y - velocity) - 32;
+        if (state.world.collides(target, state.walls)) {
+          state.currentDirection = false;
+        }
+        break;
+      case 'down':
+        target.x = state.player.x - 32;
+        target.y = (state.player.y + velocity) - 32;
+        if (state.world.collides(target, state.walls)) {
+          state.currentDirection = false;
+        }
+        break;
+      case 'left':
+        target.x = (state.player.x - velocity) - 32;
+        target.y = state.player.y - 32;
+        if (state.world.collides(target, state.walls)) {
+          state.currentDirection = false;
+        }
+        break;
+      case 'right':
+        target.x = (state.player.x + velocity) - 32;
+        target.y = state.player.y - 32;
+        if (state.world.collides(target, state.walls)) {
+          state.currentDirection = false;
+        }
+        break;
+    }
+  },
+  
+  
+  
+  
+  
+  
+  
+/*
   moveX: function (diffX, diffX_pos, velocity) {
     if (diffX_pos < velocity) velocity = diffX_pos;
     if (diffX > 0) {
@@ -151,18 +279,15 @@ game.newState('demo', {
     console.log(dir);
     switch (dir) {
       case 'up':
-/*
         if (state.lastDirection == 'down') {
           console.log('last is down');
           state.move('down', velocity);
         }
-*/
         target.x = state.player.x - 32; // offset x by half a title
         target.y = (state.player.y - velocity) - 32; // offset y by half a title
         if (!state.world.collides(target, state.walls)) {
           state.player.y -= velocity;
         } else {
-/*
           target.x = (state.player.x + velocity) - 32; // offset x by half a title
           target.y = state.player.y - 32; // offset y by half a title
           if (!state.world.collides(target, state.walls)) {
@@ -170,23 +295,19 @@ game.newState('demo', {
           } else {
             state.move('left', velocity);
           }
-*/
         }
         break;
         
       case 'down':
-/*
         if (state.lastDirection == 'up') {
           console.log('last is up');
           state.move('up', velocity);
         }
-*/
         target.x = state.player.x - 32; // offset x by half a title
         target.y = (state.player.y + velocity) - 32; // offset y by half a title
         if (!state.world.collides(target, state.walls)) {
           state.player.y += velocity;
         } else {
-/*
           target.x = (state.player.x - velocity) - 32; // offset x by half a title
           target.y = state.player.y - 32; // offset y by half a title
           if (!state.world.collides(target, state.walls)) {
@@ -194,23 +315,19 @@ game.newState('demo', {
           } else {
             state.move('right', velocity);
           }
-*/
         }
         break;
         
       case 'left':
-/*
         if (state.lastDirection == 'right') {
           console.log('last is right');
           state.move('right', velocity);
         }
-*/
         target.x = (state.player.x - velocity) - 32; // offset x by half a title
         target.y = state.player.y - 32; // offset y by half a title
         if (!state.world.collides(target, state.walls)) {
           state.player.x -= velocity;
         } else {
-/*
           target.x = state.player.x - 32; // offset x by half a title
           target.y = (state.player.y - velocity) - 32; // offset y by half a title
           if (!state.world.collides(target, state.walls)) {
@@ -218,23 +335,19 @@ game.newState('demo', {
           } else {
             state.move('down', velocity);
           }
-*/
         }
         break;
         
       case 'right':
-/*
         if (state.lastDirection == 'left') {
           console.log('last is left');
           state.move('left', velocity);
         }
-*/
         target.x = (state.player.x + velocity) - 32; // offset x by half a title
         target.y = state.player.y - 32; // offset y by half a title
         if (!state.world.collides(target, state.walls)) {
           state.player.x += velocity;
         } else {
-/*
           target.x = state.player.x - 32; // offset x by half a title
           target.y = (state.player.y + velocity) - 32; // offset y by half a title
           if (!state.world.collides(target, state.walls)) {
@@ -242,12 +355,12 @@ game.newState('demo', {
           } else {
             state.move('up', velocity);
           }
-*/
         }
         break;
     }
     state.lastDirection = dir;
   },
+*/
   
   resize: function () {
     // we no longer need this because the camera centers the world on the player
