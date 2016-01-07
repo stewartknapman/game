@@ -24,9 +24,9 @@ var LayerMap = function (canvas, camera, mapID, numRows, numCols, tileWidth, til
 
 LayerMap.prototype.render = function () {
   var startCol = Math.floor(this.camera.x / this.tileWidth);
-  var endCol = startCol + (this.camera.width / this.tileWidth);
+  var endCol = Math.round(startCol + (this.camera.width / this.tileWidth));
   var startRow = Math.floor(this.camera.y / this.tileHeight);
-  var endRow = startRow + (this.camera.height / this.tileHeight);
+  var endRow = Math.round(startRow + (this.camera.height / this.tileHeight));
   var offsetX = -this.camera.x + startCol * this.tileWidth;
   var offsetY = -this.camera.y + startRow * this.tileHeight;
   

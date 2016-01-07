@@ -80,10 +80,10 @@ game.newState('demo', {
       height: 50
     };
     
-    if (!state.world.collides(target, state.walls)) {
-      state.target.attainable = true;
-    } else {
+    if (state.world.collides(target, state.walls)) {
       state.target.attainable = false;
+    } else {
+      state.target.attainable = true;
     }
     state.target.visible = true;
     state.target.stepCount = 0;
@@ -94,57 +94,159 @@ game.newState('demo', {
   
   update: function () {
     state.direction = false;
-    
     // move payer towards target
+/*
     if (state.target.attainable && (state.target.x !== state.player.x || state.target.y !== state.player.y)) {
       var diffX = state.player.x - state.target.x;
-      var diffY = state.player.y - state.target.y;      
+      var diffY = state.player.y - state.target.y;    
+      // make diffs positive for easier calcs  
       var diffX_pos = (diffX < 0)? diffX * -1 : diffX;
       var diffY_pos = (diffY < 0)? diffY * -1 : diffY;
-      
-      // if !player.collides with wall
-      state.move(diffX, diffY, diffX_pos, diffY_pos, state.player.V);
-    }
-  },
-  
-  move: function (diffX, diffY, diffX_pos, diffY_pos, velocity) {
-    // move along the shortest axis until it's the same as the target
-    // then move along the remaining axiss
-    if (state.player.x === state.target.x || state.player.y === state.target.y) {
-      if (diffX_pos > diffY_pos) {
-        state.moveX(diffX, diffX_pos, velocity);
+
+      console.log('---');
+
+      // move along the shortest axis until it's the same as the target
+      // then move along the remaining axiss
+      if (state.player.x === state.target.x || state.player.y === state.target.y) {
+        if (diffX_pos > diffY_pos) {
+          state.moveX(diffX, diffX_pos, state.player.V);
+        } else {
+          state.moveY(diffY, diffY_pos, state.player.V);
+        }
       } else {
-        state.moveY(diffY, diffY_pos, velocity);
-      }
-    } else {
-      if (diffX_pos < diffY_pos) {
-        state.moveX(diffX, diffX_pos, velocity);
-      } else {
-        state.moveY(diffY, diffY_pos, velocity);
+        if (diffX_pos < diffY_pos) {
+          state.moveX(diffX, diffX_pos, state.player.V);
+        } else {
+          state.moveY(diffY, diffY_pos, state.player.V);
+        }
       }
     }
+*/
   },
   
   moveX: function (diffX, diffX_pos, velocity) {
     if (diffX_pos < velocity) velocity = diffX_pos;
     if (diffX > 0) {
-      state.player.x -= velocity;
-      state.direction = 'left';
+      state.move('left', velocity);
     } else {
-      state.player.x += velocity;
-      state.direction = 'right';
+      state.move('right', velocity);
     }
   },
   
   moveY: function (diffY, diffY_pos, velocity) {
     if (diffY_pos < velocity) velocity = diffY_pos;
     if (diffY > 0) {
-      state.player.y -= velocity;
-      state.direction = 'up';
+      state.move('up', velocity);
     } else {
-      state.player.y += velocity;
-      state.direction = 'down';
+      state.move('down', velocity);
     }
+  },
+  
+  move: function (dir, velocity) {
+    var target = {
+      width: 32, //42,
+      height: 32 //50
+    };
+    state.direction = dir;
+    console.log(dir);
+    switch (dir) {
+      case 'up':
+/*
+        if (state.lastDirection == 'down') {
+          console.log('last is down');
+          state.move('down', velocity);
+        }
+*/
+        target.x = state.player.x - 32; // offset x by half a title
+        target.y = (state.player.y - velocity) - 32; // offset y by half a title
+        if (!state.world.collides(target, state.walls)) {
+          state.player.y -= velocity;
+        } else {
+/*
+          target.x = (state.player.x + velocity) - 32; // offset x by half a title
+          target.y = state.player.y - 32; // offset y by half a title
+          if (!state.world.collides(target, state.walls)) {
+            state.move('right', velocity);
+          } else {
+            state.move('left', velocity);
+          }
+*/
+        }
+        break;
+        
+      case 'down':
+/*
+        if (state.lastDirection == 'up') {
+          console.log('last is up');
+          state.move('up', velocity);
+        }
+*/
+        target.x = state.player.x - 32; // offset x by half a title
+        target.y = (state.player.y + velocity) - 32; // offset y by half a title
+        if (!state.world.collides(target, state.walls)) {
+          state.player.y += velocity;
+        } else {
+/*
+          target.x = (state.player.x - velocity) - 32; // offset x by half a title
+          target.y = state.player.y - 32; // offset y by half a title
+          if (!state.world.collides(target, state.walls)) {
+            state.move('left', velocity);
+          } else {
+            state.move('right', velocity);
+          }
+*/
+        }
+        break;
+        
+      case 'left':
+/*
+        if (state.lastDirection == 'right') {
+          console.log('last is right');
+          state.move('right', velocity);
+        }
+*/
+        target.x = (state.player.x - velocity) - 32; // offset x by half a title
+        target.y = state.player.y - 32; // offset y by half a title
+        if (!state.world.collides(target, state.walls)) {
+          state.player.x -= velocity;
+        } else {
+/*
+          target.x = state.player.x - 32; // offset x by half a title
+          target.y = (state.player.y - velocity) - 32; // offset y by half a title
+          if (!state.world.collides(target, state.walls)) {
+            state.move('up', velocity);
+          } else {
+            state.move('down', velocity);
+          }
+*/
+        }
+        break;
+        
+      case 'right':
+/*
+        if (state.lastDirection == 'left') {
+          console.log('last is left');
+          state.move('left', velocity);
+        }
+*/
+        target.x = (state.player.x + velocity) - 32; // offset x by half a title
+        target.y = state.player.y - 32; // offset y by half a title
+        if (!state.world.collides(target, state.walls)) {
+          state.player.x += velocity;
+        } else {
+/*
+          target.x = state.player.x - 32; // offset x by half a title
+          target.y = (state.player.y + velocity) - 32; // offset y by half a title
+          if (!state.world.collides(target, state.walls)) {
+            state.move('down', velocity);
+          } else {
+            state.move('up', velocity);
+          }
+*/
+        }
+        break;
+    }
+    state.lastDirection = dir;
   },
   
   resize: function () {
@@ -655,9 +757,9 @@ var LayerMap = function (canvas, camera, mapID, numRows, numCols, tileWidth, til
 
 LayerMap.prototype.render = function () {
   var startCol = Math.floor(this.camera.x / this.tileWidth);
-  var endCol = startCol + (this.camera.width / this.tileWidth);
+  var endCol = Math.round(startCol + (this.camera.width / this.tileWidth));
   var startRow = Math.floor(this.camera.y / this.tileHeight);
-  var endRow = startRow + (this.camera.height / this.tileHeight);
+  var endRow = Math.round(startRow + (this.camera.height / this.tileHeight));
   var offsetX = -this.camera.x + startCol * this.tileWidth;
   var offsetY = -this.camera.y + startRow * this.tileHeight;
   
