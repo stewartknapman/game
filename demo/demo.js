@@ -58,7 +58,7 @@ game.newState('demo', {
     };
     
     // Input: move player to clicked/touched center
-    state.currentDirection = false;
+    state.target.currentTarget = false;
     document.addEventListener('click', function (event) {
       state.newTarget(event);
     });
@@ -68,23 +68,27 @@ game.newState('demo', {
   },
   
   newTarget: function (event) {
-    // if new target collides with wall then don't set the target
-    // but still give feedback: red ripple
+    // Set a new target x & y so that we can give feedback
     state.target.x = Math.round(state.camera.x + event.pageX);
     state.target.y = Math.round(state.camera.y + event.pageY);
     
+    // check if the new target collides with a wall
     var target = {
       x: state.target.x - 32, // offset x by half a title
       y: state.target.y - 32, // offset y by half a title
-      width: 42,
-      height: 50
+      width: 32,
+      height: 32
     };
-    
     if (state.world.collides(target, state.walls)) {
-      state.target.attainable = false;
+      // can't set a traget in a collision zone
+      state.target.currentTarget = false;
     } else {
-      state.target.attainable = true;
+      // target is attainable so create a direction object
+      state.target.currentTarget = state.setNewTarget();
+      console.log(state.target.currentTarget);
     }
+    
+    // Show then hide the targets feedback ripple
     state.target.visible = true;
     state.target.stepCount = 0;
     setTimeout(function () {
@@ -92,11 +96,115 @@ game.newState('demo', {
     }, 500);
   },
   
+  setNewTarget: function () {
+    // get the difference between the player and the target
+    var diffX = state.player.x - state.target.x;
+    var diffY = state.player.y - state.target.y;    
+    // make diffs positive for easier checking and calcs  
+    var diffX_pos = (diffX < 0)? diffX * -1 : diffX;
+    var diffY_pos = (diffY < 0)? diffY * -1 : diffY;
+    
+    return {
+      currentDirection: 0,
+      diffX: diffX,
+      diffX_pos: diffX_pos,
+      diffY: diffY,
+      diffY_pos: diffY_pos,
+      direction: state.getDirection(diffX, diffY, diffX_pos, diffY_pos)
+    };
+  },
+  
+  getDirection: function (diffX, diffY, diffX_pos, diffY_pos) {
+    var direction = [];
+    var goX = function () {
+      if (diffX > 0) {
+        direction.push('left');
+      } else {
+        direction.push('right');
+      }
+    };
+    var goY = function () {
+      if (diffY > 0) {
+        direction.push('up');
+      } else {
+        direction.push('down');
+      }
+    };
+    var switchDir = function (dir) {
+      switch (dir) {
+        case 'left':
+          direction.push('right');
+          break;
+        case 'right':
+          direction.push('left');
+          break;
+        case 'up':
+          direction.push('down');
+          break;
+        case 'down':
+          direction.push('up');
+          break;
+      }
+    };
+    
+    // first choice: longest direction towards
+    if (diffX_pos > diffY_pos) {
+      goX();
+    } else {
+      goY();
+    }
+    
+    // second choice: shortest direction towards
+    if (diffX_pos < diffY_pos) {
+      goX();
+    } else {
+      goY();
+    }
+    
+    // third choice: longest direction away
+    // opposite of first
+    switchDir(direction[0]);
+    
+    // fourth choice: shortest direction away
+    // opposite of second
+    switchDir(direction[1]);
+    
+    return direction;
+  },
+  
   update: function () {
     // if we have a target that is different to our players x & y
     // and we can reach it
     // move the player towards target
-    if (state.target.attainable && (state.target.x !== state.player.x || state.target.y !== state.player.y)) {
+
+    // Work out the current direction and hold it. (up/down/left/right)
+    // if we can't make the next step or we are at 0 on our current axis
+    // then change the direction
+    
+    // Object dosn't change until new target
+    // Changing direction preference: e.g. target: top, right
+    // - longest distance(axis) towards target e.g. right (until hit or stop)
+    // - shortest distance(axis) towards target e.g. up (until hit or stop)
+    // - longest distance(axis) away from target e.g. left (try above step first or until hit)
+    // - shortest distance(axis) away from target e.g. down (try above step first or until hit)
+    // Preferece stack is two-way: e.g. go in order of 1,2,3,4,3,2,1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//     if (state.target.attainable && (state.target.x !== state.player.x || state.target.y !== state.player.y)) {
+
+/*
       // get the difference between the player and the target
       var diffX = state.player.x - state.target.x;
       var diffY = state.player.y - state.target.y;    
@@ -132,9 +240,10 @@ game.newState('demo', {
       // if we do then change direction
       state.checkPath(velocity);
       state.lastDirection = state.currentDirection;
-    } else {
-      state.currentDirection = false;
-    }
+*/
+//     } else {
+//       state.currentDirection = false;
+//     }
     
     
     
@@ -172,6 +281,7 @@ game.newState('demo', {
 */
   },
   
+/*
   getDirection: function (diffX, diffY, diffX_pos, diffY_pos) {
     var direction;
     // move along the shortest axis until it's the same as the target
@@ -207,7 +317,9 @@ game.newState('demo', {
     }
     return direction;
   },
+*/
   
+/*
   checkPath: function (velocity) {
     var target = {
       width: 32,
@@ -244,6 +356,7 @@ game.newState('demo', {
         break;
     }
   },
+*/
   
   
   
@@ -489,7 +602,7 @@ game.newState('demo', {
       var o = (1-((state.target.step * state.target.stepCount)/20)).toFixed(2);
       o = Number(o);
       
-      if (state.target.attainable) {
+      if (state.target.currentTarget) {
         state.canvas.context.strokeStyle = 'rgba(3, 185, 227, '+o+')'; //'#03b9e3';
       } else {
         state.canvas.context.strokeStyle = 'rgba(243, 58, 58, '+o+')'; //'#f33a3a'; red
