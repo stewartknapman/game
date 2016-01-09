@@ -85,7 +85,6 @@ game.newState('demo', {
     } else {
       // target is attainable so create a direction object
       state.target.currentTarget = state.setNewTarget();
-      console.log(state.target.currentTarget);
     }
     
     // Show then hide the targets feedback ripple
@@ -97,6 +96,15 @@ game.newState('demo', {
   },
   
   setNewTarget: function () {
+    var diffs = state.getDiffs();
+    return {
+      currentDirection: 0,
+      diffs: diffs,
+      direction: state.getDirectionStack(diffs)
+    };
+  },
+  
+  getDiffs: function () {
     // get the difference between the player and the target
     var diffX = state.player.x - state.target.x;
     var diffY = state.player.y - state.target.y;    
@@ -105,26 +113,24 @@ game.newState('demo', {
     var diffY_pos = (diffY < 0)? diffY * -1 : diffY;
     
     return {
-      currentDirection: 0,
-      diffX: diffX,
-      diffX_pos: diffX_pos,
-      diffY: diffY,
-      diffY_pos: diffY_pos,
-      direction: state.getDirection(diffX, diffY, diffX_pos, diffY_pos)
-    };
+      x: diffX,
+      x_pos: diffX_pos,
+      y: diffY,
+      y_pos: diffY_pos
+    }
   },
   
-  getDirection: function (diffX, diffY, diffX_pos, diffY_pos) {
+  getDirectionStack: function (diffs) {
     var direction = [];
     var goX = function () {
-      if (diffX > 0) {
+      if (diffs.x > 0) {
         direction.push('left');
       } else {
         direction.push('right');
       }
     };
     var goY = function () {
-      if (diffY > 0) {
+      if (diffs.y > 0) {
         direction.push('up');
       } else {
         direction.push('down');
@@ -148,14 +154,14 @@ game.newState('demo', {
     };
     
     // first choice: longest direction towards
-    if (diffX_pos > diffY_pos) {
+    if (diffs.x_pos > diffs.y_pos) {
       goX();
     } else {
       goY();
     }
     
     // second choice: shortest direction towards
-    if (diffX_pos < diffY_pos) {
+    if (diffs.x_pos < diffs.y_pos) {
       goX();
     } else {
       goY();
@@ -193,287 +199,172 @@ game.newState('demo', {
 
 
 
+    // !!!!
+    // can you move in any of these directions?
+    // if so which one?
+    // - check against hit or stop and find the first that can
+    
+    // now move
+    
+    // if dir is 3rd||4th choice
+    // make curDir -1
 
 
-
-
-
-
-
-
-
-//     if (state.target.attainable && (state.target.x !== state.player.x || state.target.y !== state.player.y)) {
-
+    state.tick = state.tick || 0;
+    if (state.target.currentTarget) {
+      // if we have reached the target then stop
+      if (state.target.x === state.player.x && state.target.y === state.player.y) {
+        state.target.currentTarget = false;
+        state.tick = 0;
+      } else {
+        state.tick++;
+        // Get me that target
+        state.target.currentTarget.diffs = state.getDiffs();
+        var d = state.target.currentTarget.currentDirection;
+        var direction = state.target.currentTarget.direction[d];
+        
+        
+        console.log('-----');
+//         console.log('direction', direction, d);
+        
+        // if we are on the targets axis
+        // then change direction
+        if (state.target.x === state.player.x) {
+          if (direction === 'left' || direction === 'right') {
+            d++;
+          }
+        } else if (state.target.y === state.player.y) {
+          if (direction === 'up' || direction === 'down') {
+            d++;
+          }
+        }
+        
+        // get the next posible direction
+        state.directionCount = 0;
+        d = state.getDirection(d);
+//         console.log('updated direction', state.target.currentTarget.direction[d], d);
+        if (d !== false) {
+          state.target.currentTarget.currentDirection = d;
+          direction = state.target.currentTarget.direction[d];
+          
+          var velocity = state.getVelocity(direction);
+          switch (direction) {
+            case 'up':
+              state.player.y -= velocity;
+              break;
+            case 'down':
+              state.player.y += velocity;
+              break;
+            case 'left':
+              state.player.x -= velocity;
+              break;
+            case 'right':
+              state.player.x += velocity;
+              break;
+          }
+        
+          // update direction for next tick if we are heading in the opposite way
+          // 64 == 2 tiles
 /*
-      // get the difference between the player and the target
-      var diffX = state.player.x - state.target.x;
-      var diffY = state.player.y - state.target.y;    
-      // make diffs positive for easier calcs  
-      var diffX_pos = (diffX < 0)? diffX * -1 : diffX;
-      var diffY_pos = (diffY < 0)? diffY * -1 : diffY;
+          if (state.tick % 64 === 0) {
+            if (d === 2) state.target.currentTarget.currentDirection = 0;
+            if (d === 3) state.target.currentTarget.currentDirection = 1;
+          }
+*/
+/*
+          if (state.target.currentTarget.currentDirection > 1 &&
+          state.target.currentTarget.currentDirection < state.target.currentTarget.direction.length &&
+          state.tick % 64 === 0) {
+            state.target.currentTarget.currentDirection--;
+            console.log('step back', d, state.target.currentTarget.currentDirection);
+          }
+*/
+          
+          console.log(state.target.currentTarget);
+          
+        } else {
+          // couldn't get a direction so we are stuck
+          console.log('stuck');
+          state.target.x = state.player.x;
+          state.target.y = state.player.y;
+          state.target.currentTarget = false;
+        }
+      }
+    }
+  },
+  
+  getVelocity: function (direction) {
+    var velocity = state.player.V;
+    // don't over shoot target
+    if (direction === 'up' || direction === 'down') {
+      if (state.target.currentTarget.diffs.y_pos < velocity) velocity = state.target.currentTarget.diffs.y_pos;
+    } else {
+      if (state.target.currentTarget.diffs.x_pos < velocity) velocity = state.target.currentTarget.diffs.x_pos;
+    }
+    return velocity;
+  },
+  
+  getDirection: function (d) {
+    state.directionCount++;
+    if (state.directionCount < 6) { 
+    
+//       var preD = d;
+      if (d < 0) d++;
+      if (d >= state.target.currentTarget.direction.length) d--;
       
-      // make sure we have a heading, if we don't then get one
-      state.currentDirection = state.currentDirection || state.getDirection(diffX, diffY, diffX_pos, diffY_pos);
+//       console.log('d', d);
+      var direction = state.target.currentTarget.direction[d];
+      var velocity = state.getVelocity(direction);
+      var target = {
+        width: 32,
+        height: 32
+      };
       
-      // actually move
-      var velocity = state.player.V;
-      switch (state.currentDirection) {
+      switch (direction) {
         case 'up':
-          if (diffY_pos < velocity) velocity = diffY_pos;
-          state.player.y -= velocity;
+          target.x = state.player.x - 32;
+          target.y = (state.player.y - velocity) - 32;
           break;
         case 'down':
-          if (diffY_pos < velocity) velocity = diffY_pos;
-          state.player.y += velocity;
+          target.x = state.player.x - 32;
+          target.y = (state.player.y + velocity) - 32;
           break;
         case 'left':
-          if (diffX_pos < velocity) velocity = diffX_pos;
-          state.player.x -= velocity;
+          target.x = (state.player.x - velocity) - 32;
+          target.y = state.player.y - 32;
           break;
         case 'right':
-          if (diffX_pos < velocity) velocity = diffX_pos;
-          state.player.x += velocity;
+          target.x = (state.player.x + velocity) - 32;
+          target.y = state.player.y - 32;
           break;
       }
       
-      // check if we have a collision for next time round
-      // if we do then change direction
-      state.checkPath(velocity);
-      state.lastDirection = state.currentDirection;
-*/
-//     } else {
-//       state.currentDirection = false;
-//     }
-    
-    
-    
-    
-    
-    
-    
-    
-/*
-    if (state.target.attainable && (state.target.x !== state.player.x || state.target.y !== state.player.y)) {
-      var diffX = state.player.x - state.target.x;
-      var diffY = state.player.y - state.target.y;    
-      // make diffs positive for easier calcs  
-      var diffX_pos = (diffX < 0)? diffX * -1 : diffX;
-      var diffY_pos = (diffY < 0)? diffY * -1 : diffY;
-
-      console.log('---');
-
-      // move along the shortest axis until it's the same as the target
-      // then move along the remaining axiss
-      if (state.player.x === state.target.x || state.player.y === state.target.y) {
-        if (diffX_pos > diffY_pos) {
-          state.moveX(diffX, diffX_pos, state.player.V);
-        } else {
-          state.moveY(diffY, diffY_pos, state.player.V);
-        }
-      } else {
-        if (diffX_pos < diffY_pos) {
-          state.moveX(diffX, diffX_pos, state.player.V);
-        } else {
-          state.moveY(diffY, diffY_pos, state.player.V);
-        }
-      }
-    }
-*/
-  },
-  
-/*
-  getDirection: function (diffX, diffY, diffX_pos, diffY_pos) {
-    var direction;
-    // move along the shortest axis until it's the same as the target
-    // then move along the remaining axiss
-    if (state.player.x === state.target.x || state.player.y === state.target.y) {
-      if (diffX_pos > diffY_pos) {
-        if (diffX > 0) {
-          direction = 'left';
-        } else {
-          direction = 'right';
-        }
-      } else {
-        if (diffY > 0) {
-          direction = 'up';
-        } else {
-          direction = 'down';
-        }
-      }
-    } else {
-      if (diffX_pos < diffY_pos) {
-        if (diffX > 0) {
-          direction = 'left';
-        } else {
-          direction = 'right';
-        }
-      } else {
-        if (diffY > 0) {
-          direction = 'up';
-        } else {
-          direction = 'down';
-        }
-      }
-    }
-    return direction;
-  },
-*/
-  
-/*
-  checkPath: function (velocity) {
-    var target = {
-      width: 32,
-      height: 32
-    };
-    switch (state.lastDirection) {
-      case 'up':
-        target.x = state.player.x - 32;
-        target.y = (state.player.y - velocity) - 32;
-        if (state.world.collides(target, state.walls)) {
-          state.currentDirection = false;
-        }
-        break;
-      case 'down':
-        target.x = state.player.x - 32;
-        target.y = (state.player.y + velocity) - 32;
-        if (state.world.collides(target, state.walls)) {
-          state.currentDirection = false;
-        }
-        break;
-      case 'left':
-        target.x = (state.player.x - velocity) - 32;
-        target.y = state.player.y - 32;
-        if (state.world.collides(target, state.walls)) {
-          state.currentDirection = false;
-        }
-        break;
-      case 'right':
-        target.x = (state.player.x + velocity) - 32;
-        target.y = state.player.y - 32;
-        if (state.world.collides(target, state.walls)) {
-          state.currentDirection = false;
-        }
-        break;
-    }
-  },
-*/
-  
-  
-  
-  
-  
-  
-  
-/*
-  moveX: function (diffX, diffX_pos, velocity) {
-    if (diffX_pos < velocity) velocity = diffX_pos;
-    if (diffX > 0) {
-      state.move('left', velocity);
-    } else {
-      state.move('right', velocity);
-    }
-  },
-  
-  moveY: function (diffY, diffY_pos, velocity) {
-    if (diffY_pos < velocity) velocity = diffY_pos;
-    if (diffY > 0) {
-      state.move('up', velocity);
-    } else {
-      state.move('down', velocity);
-    }
-  },
-  
-  move: function (dir, velocity) {
-    var target = {
-      width: 32, //42,
-      height: 32 //50
-    };
-    state.direction = dir;
-    console.log(dir);
-    switch (dir) {
-      case 'up':
-        if (state.lastDirection == 'down') {
-          console.log('last is down');
-          state.move('down', velocity);
-        }
-        target.x = state.player.x - 32; // offset x by half a title
-        target.y = (state.player.y - velocity) - 32; // offset y by half a title
-        if (!state.world.collides(target, state.walls)) {
-          state.player.y -= velocity;
-        } else {
-          target.x = (state.player.x + velocity) - 32; // offset x by half a title
-          target.y = state.player.y - 32; // offset y by half a title
-          if (!state.world.collides(target, state.walls)) {
-            state.move('right', velocity);
-          } else {
-            state.move('left', velocity);
-          }
-        }
-        break;
+      if (state.world.collides(target, state.walls)) {
+        // collision so try another direction
         
-      case 'down':
-        if (state.lastDirection == 'up') {
-          console.log('last is up');
-          state.move('up', velocity);
-        }
-        target.x = state.player.x - 32; // offset x by half a title
-        target.y = (state.player.y + velocity) - 32; // offset y by half a title
-        if (!state.world.collides(target, state.walls)) {
-          state.player.y += velocity;
-        } else {
-          target.x = (state.player.x - velocity) - 32; // offset x by half a title
-          target.y = state.player.y - 32; // offset y by half a title
-          if (!state.world.collides(target, state.walls)) {
-            state.move('left', velocity);
-          } else {
-            state.move('right', velocity);
-          }
-        }
-        break;
+        console.log(state.target.currentTarget.currentDirection, d);
         
-      case 'left':
-        if (state.lastDirection == 'right') {
-          console.log('last is right');
-          state.move('right', velocity);
-        }
-        target.x = (state.player.x - velocity) - 32; // offset x by half a title
-        target.y = state.player.y - 32; // offset y by half a title
-        if (!state.world.collides(target, state.walls)) {
-          state.player.x -= velocity;
+/*
+        if (preD < d) {
+          console.log('going down');
+          d--;
         } else {
-          target.x = state.player.x - 32; // offset x by half a title
-          target.y = (state.player.y - velocity) - 32; // offset y by half a title
-          if (!state.world.collides(target, state.walls)) {
-            state.move('up', velocity);
-          } else {
-            state.move('down', velocity);
-          }
+          console.log('going up');
+          d++;
         }
-        break;
-        
-      case 'right':
-        if (state.lastDirection == 'left') {
-          console.log('last is left');
-          state.move('left', velocity);
-        }
-        target.x = (state.player.x + velocity) - 32; // offset x by half a title
-        target.y = state.player.y - 32; // offset y by half a title
-        if (!state.world.collides(target, state.walls)) {
-          state.player.x += velocity;
-        } else {
-          target.x = state.player.x - 32; // offset x by half a title
-          target.y = (state.player.y + velocity) - 32; // offset y by half a title
-          if (!state.world.collides(target, state.walls)) {
-            state.move('down', velocity);
-          } else {
-            state.move('up', velocity);
-          }
-        }
-        break;
-    }
-    state.lastDirection = dir;
-  },
 */
+        d++;
+        return state.getDirection(d);
+      } else {
+        // go this way
+        return d;
+      }
+      
+    } else {
+      console.log('over count limit');
+      return false;
+    }
+  },
   
   resize: function () {
     // we no longer need this because the camera centers the world on the player
